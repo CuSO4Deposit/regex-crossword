@@ -142,19 +142,23 @@ fun BoardView(
                         val sorted = candidates.sorted()
                         val cols = if (sorted.size > 12) 5 else 4
                         val rows = (sorted.size + cols - 1) / cols
-                        val mini = layout.textSize * 0.30f
+                        val fontPx = minOf(
+                            layout.textSize * 0.50f,
+                            layout.textSize * 1.7f / maxOf(cols, rows),
+                        )
                         val noteStyle = baseStyle.copy(
-                            color = colors.note,
-                            fontSize = with(density) { mini.toSp() },
+                            color = if (cell == selected) colors.selectedLetter else colors.note,
+                            fontSize = with(density) { fontPx.toSp() },
                             fontWeight = FontWeight.Normal,
                         )
-                        for ((index, candidate) in sorted.withIndex()) {
+                        for (index in sorted.indices) {
                             val row = index / cols
                             val col = index % cols
-                            val dx = (col - (cols - 1) / 2f) * mini * 0.95f
-                            val dy = (row - (rows - 1) / 2f) * mini
+                            val inRow = minOf(cols, sorted.size - row * cols)
+                            val dx = (col - (inRow - 1) / 2f) * fontPx * 1.05f
+                            val dy = (row - (rows - 1) / 2f) * fontPx * 1.15f
                             val measured = measurer.measure(
-                                AnnotatedString(candidate.toString()),
+                                AnnotatedString(sorted[index].toString()),
                                 noteStyle,
                             )
                             drawText(

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -252,7 +254,14 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(8.dp),
         ) {
-            CluePanel(puzzle, selected, result)
+            // Fixed-height clue area so selecting a cell never resizes the board.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(112.dp),
+            ) {
+                CluePanel(puzzle, selected, result)
+            }
             BoardView(
                 puzzle = puzzle,
                 grid = grid,
@@ -388,6 +397,8 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                 Text(
                     text = clue,
                     style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "  $mark ${lineResult?.word ?: ""}",
