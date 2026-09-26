@@ -784,14 +784,43 @@ def _generate_constructive(cfg: GenConfig):
                 and tok.body == re.escape(text[tok.lo])
             )
 
-        # a little flavour: whole-line shapers on a few lines
+        # Whole-line structural clues.  Easy keeps the light garnish; medium and
+        # hard lean on position-free MIT-style clues (``.*c.*`` spans,
+        # ``[SET]*c[SET]*``, class/alternation stars, backref repeats) so letters
+        # are not pinned to individual cells.  ``shape_dot_skeleton`` fixes a
+        # position per character, so it is deliberately not used here.
+        structural = [name for name in _SHAPERS if name != "shape_dot_skeleton"]
         keys = list(tokens)
         rng.shuffle(keys)
-        n_shapers = rng.randint(0, min(3, cfg.max_chunk_alts + 1))
-        for key in keys[:n_shapers]:
-            op = rng.choice(list(_SHAPERS))
-            new_tokens = _SHAPERS[op][0](texts[key], cfg.alphabet, rng, cfg)
-            if new_tokens and re.fullmatch(render_tokens(new_tokens), texts[key]):
+        if cfg.difficulty == "easy":
+            n_structural = rng.randint(0, min(3, cfg.max_chunk_alts + 1))
+            candidates = list(_SHAPERS)
+        elif cfg.difficulty == "medium":
+            n_structural = rng.randint(0, max(2, len(keys) // 8))
+            candidates = structural + ["contains"]
+        else:
+            n_structural = rng.randint(
+                len(keys) // 3, max(len(keys) // 3, len(keys) // 2)
+            )
+            candidates = structural + ["contains", "contains", "dotstar"]
+
+        def _acceptable(key, new_tokens):
+            rendered = render_tokens(new_tokens)
+            if rendered == render_tokens(tokens[key]):
+                return False
+            if re.search(r"[A-Za-z]", rendered) is None:
+                return False  # a clue with no letter carries no information
+            return re.fullmatch(rendered, texts[key]) is not None
+
+        for key in keys[:n_structural]:
+            op = rng.choice(candidates)
+            if op in _SHAPERS:
+                new_tokens = _SHAPERS[op][0](texts[key], cfg.alphabet, rng, cfg)
+            else:
+                new_tokens = _OPERATORS[op][0](tokens[key], texts[key], rng, cfg)
+            if new_tokens is None:
+                continue
+            if _acceptable(key, new_tokens):
                 tokens[key] = new_tokens
 
         # ensure every line is non-literal, then dial the overall literal ratio

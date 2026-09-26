@@ -91,15 +91,47 @@ object Generator {
             val tokens = LinkedHashMap<LineKey, MutableList<Frag>>()
             for ((key, text) in texts) tokens[key] = literalTokens(text).toMutableList()
 
+            // Whole-line structural clues. Easy keeps the light garnish; medium
+            // and hard lean on position-free MIT-style clues (.*c.* spans,
+            // [SET]*c[SET]*, class/alternation stars, backref repeats) so letters
+            // are not pinned to cells. shape_dot_skeleton pins a position per
+            // character and is deliberately excluded here.
+            val structural = shaperNames.filter { it != "shape_dot_skeleton" }
             val keys = tokens.keys.toMutableList()
             rng.shuffle(keys)
-            val nShapers = rng.randint(0, min(3, cfg.maxChunkAlts + 1))
-            for (key in keys.take(nShapers)) {
-                val op = rng.choice(shaperNames)
-                val newTokens = applyShaper(op, texts.getValue(key), cfg.alphabet, rng)
-                if (newTokens != null && fullmatch(renderTokens(newTokens), texts.getValue(key))) {
-                    tokens[key] = newTokens.toMutableList()
+            val nStructural: Int
+            val candidates: List<String>
+            when (cfg.difficulty) {
+                "easy" -> {
+                    nStructural = rng.randint(0, min(3, cfg.maxChunkAlts + 1))
+                    candidates = shaperNames
                 }
+                "medium" -> {
+                    nStructural = rng.randint(0, maxOf(2, keys.size / 8))
+                    candidates = structural + "contains"
+                }
+                else -> {
+                    nStructural = rng.randint(keys.size / 3, maxOf(keys.size / 3, keys.size / 2))
+                    candidates = structural + listOf("contains", "contains", "dotstar")
+                }
+            }
+
+            fun acceptable(key: LineKey, newTokens: List<Frag>): Boolean {
+                val rendered = renderTokens(newTokens)
+                if (rendered == renderTokens(tokens.getValue(key))) return false
+                if (!rendered.any { it in 'A'..'Z' || it in 'a'..'z' }) return false
+                return fullmatch(rendered, texts.getValue(key))
+            }
+
+            for (key in keys.take(nStructural)) {
+                val op = rng.choice(candidates)
+                val newTokens = when {
+                    op in shaperNames -> applyShaper(op, texts.getValue(key), cfg.alphabet, rng)
+                    op == "contains" -> opContains(tokens.getValue(key), texts.getValue(key), rng)
+                    else -> opDotstar(tokens.getValue(key), texts.getValue(key), rng)
+                }
+                if (newTokens == null) continue
+                if (acceptable(key, newTokens)) tokens[key] = newTokens.toMutableList()
             }
 
             fun isLiteralFrag(tok: Frag, text: String): Boolean =
@@ -220,6 +252,44 @@ object Generator {
             "shape_alt_star" -> shapeAltStar(text, alphabet, rng)
             else -> shapeRepeatBlock(text, alphabet, rng)
         }
+
+    private fun randomRun(tokens: List<Frag>, rng: PyRandom): Triple<Int, Int, List<Frag>>? {
+        val n = tokens.size
+        if (n == 0) return null
+        val i = rng.randrange(0, n)
+        val j = rng.randrange(i, n)
+        return Triple(i, j, tokens.subList(i, j + 1))
+    }
+
+    /** Replace a random span with `.*` (position-free). */
+    private fun opDotstar(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val run = randomRun(tokens, rng) ?: return null
+        val i = run.first
+        val j = run.second
+        val out = tokens.toMutableList()
+        val lo = tokens[i].lo
+        val hi = tokens[j].hi
+        repeat(j - i + 1) { out.removeAt(i) }
+        out.add(i, Frag(".*", lo, hi, false))
+        return out
+    }
+
+    /** Replace a random span with `.*c.*` for a character it contains. */
+    private fun opContains(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val run = randomRun(tokens, rng) ?: return null
+        val i = run.first
+        val j = run.second
+        val trueText = text.substring(tokens[i].lo, tokens[j].hi)
+        if (trueText.isEmpty()) return null
+        val c = rng.choice(trueText.toList())
+        val body = ".*" + PyRe.escape(c.toString()) + ".*"
+        val out = tokens.toMutableList()
+        val lo = tokens[i].lo
+        val hi = tokens[j].hi
+        repeat(j - i + 1) { out.removeAt(i) }
+        out.add(i, Frag(body, lo, hi, false))
+        return out
+    }
 
     private fun classSet(text: String, alphabet: String, rng: PyRandom): String {
         val chars = text.toSet()

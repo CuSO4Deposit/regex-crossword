@@ -27,9 +27,11 @@ explicitly changes them.
 
   Each difficulty has its own seed space on purpose: medium and hard share a
   geometry, so a shared seed would give the same truth grid (same answer).
-  `--target-score` sets clue opacity (higher = fewer literals = fewer cells you
-  can read off). Full default alphabet `A–Z`, always `--no-unique`, CLI command
-  is `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L))
+  `--target-score` sets clue opacity, and medium/hard also apply position-free
+  MIT-style clues (`.*c.*`, `[SET]*c[SET]*`, class/alt stars, backref repeats)
+  so letters are not pinned to cells; `shape_dot_skeleton` (fixed-length) is
+  excluded for them. Full default alphabet `A–Z`, always `--no-unique`, CLI
+  command is `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L))
 [--target-score <t>] --no-unique`.
 
 - **Identity, not level number.** A puzzle is `(GENERATOR_VERSION, seed)`; the

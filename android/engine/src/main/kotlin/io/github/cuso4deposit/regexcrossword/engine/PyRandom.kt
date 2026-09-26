@@ -118,6 +118,12 @@ class PyRandom(seed: Long) {
         return min + randbelow(max - min + 1)
     }
 
+    /** CPython `randrange(start, stop)` for integer arguments. */
+    fun randrange(start: Int, stop: Int): Int {
+        require(stop > start) { "empty range for randrange" }
+        return start + randbelow(stop - start)
+    }
+
     fun <T> choice(seq: List<T>): T = seq[randbelow(seq.size)]
 
     fun <T> shuffle(list: MutableList<T>) {

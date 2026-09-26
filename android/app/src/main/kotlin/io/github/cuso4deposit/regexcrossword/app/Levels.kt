@@ -18,7 +18,7 @@ import io.github.cuso4deposit.regexcrossword.engine.Puzzle
  * Bump it on *any* change to the generator algorithm, the pinned presets, or
  * the seed bases.
  */
-const val GENERATOR_VERSION = 2
+const val GENERATOR_VERSION = 3
 
 data class PuzzleId(val version: Int, val difficulty: Difficulty, val seed: Int)
 

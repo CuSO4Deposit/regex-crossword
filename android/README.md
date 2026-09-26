@@ -66,9 +66,12 @@ solver is needed):
 | medium     | hex, edge 5 | `2_000_000 + L` | `73`   | `hexregex gen --edge 5 --difficulty medium --seed $((2000000+L)) --target-score 73 --no-unique` |
 | hard       | hex, edge 5 | `3_000_000 + L` | `85`   | `hexregex gen --edge 5 --difficulty hard   --seed $((3000000+L)) --target-score 85 --no-unique` |
 
-`--target-score` drives clue opacity: higher = fewer literal tokens = fewer
-cells readable straight off. medium is the old "hard" (≈37% literals); hard is
-much looser (≈15% literals), closer to the MIT original in feel.
+`--target-score` drives clue opacity, and medium/hard additionally apply
+position-free MIT-style structures (`.*c.*` spans, `[SET]*c[SET]*`,
+class/alternation stars, backref repeats) so letters sit inside `.`/classes
+instead of pinning cells. medium ≈ the old "hard"; hard is looser and
+structurally closer to the MIT original. (Fixed-length skeleton clues, which
+pin one cell per character, are deliberately not used for these.)
 
 Each difficulty gets its own seed space: with a shared seed, medium and hard
 (identical geometry) would produce the _same truth grid_ for the same level,
