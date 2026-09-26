@@ -30,6 +30,7 @@ android/
     src/main/.../BoardView.kt  Canvas rendering
     src/main/.../BoardLayout.kt honeycomb / grid layout + hit testing
     src/main/.../LetterPalette.kt on-screen letter keyboard
+    src/main/.../GameStore.kt  SharedPreferences save/restore of progress
 ```
 
 The engine is deliberately a plain JVM module so it can be unit-tested without
@@ -123,7 +124,8 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 ## Next steps
 
 The solver (`regex_engine.py` + `solver.py`) is already ported and used for
-hints, so the app never needs the stored solution.
+hints, and progress is saved and restored per difficulty, so the app never
+needs the stored solution.
 
 1. **Port the constructive generator** (`hexregex/generator.py`,
    `_generate_constructive`) together with CPython's `random.Random` (MT19937 +
@@ -132,5 +134,6 @@ puzzle` is byte-identical to `hexregex gen`. Wire `Difficulty` to
    `SEED_BASE + level`.
 2. Level pipeline: level navigator, prefetch `L+1..L+3` on a background thread,
    cache generated JSON.
-3. Persist progress; daily challenge / share by level id.
-4. Optional: per-line live feedback while typing, notes mode, reveal/hint.
+3. Notes mode, per-line live feedback while typing, daily challenge / share by
+   level id.
+4. Move puzzle generation and heavy solving off the main thread.

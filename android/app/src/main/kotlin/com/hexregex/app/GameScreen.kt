@@ -19,12 +19,14 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +37,7 @@ import com.hexregex.engine.JudgeResult
 import com.hexregex.engine.Puzzle
 import com.hexregex.engine.Solver
 import com.hexregex.engine.SolverLimitException
+import kotlinx.coroutines.flow.collect
 
 /** Built-in fixtures, one per pinned difficulty preset (seed 1000). */
 enum class Difficulty(val label: String, val asset: String) {
@@ -50,13 +53,29 @@ private fun loadPuzzle(context: Context, difficulty: Difficulty): Puzzle =
 @Composable
 fun GameScreen() {
     val context = LocalContext.current
-    var difficulty by remember { mutableStateOf(Difficulty.MEDIUM) }
+    val store = remember { GameStore(context) }
+    var difficulty by remember { mutableStateOf(store.loadDifficulty(Difficulty.MEDIUM)) }
     val puzzle = remember(difficulty) { loadPuzzle(context, difficulty) }
     val solver = remember(puzzle) { Solver(puzzle) }
-    val grid = remember(difficulty) { mutableStateMapOf<Cell, Char>() }
-    var selected by remember(difficulty) { mutableStateOf<Cell?>(null) }
+    val saved = remember(difficulty) { store.load(difficulty) }
+    val validCells = remember(puzzle) { puzzle.geometry.cells().toHashSet() }
+    val grid = remember(difficulty) {
+        mutableStateMapOf<Cell, Char>().apply {
+            putAll(saved.grid.filterKeys { it in validCells })
+        }
+    }
+    var selected by remember(difficulty) {
+        mutableStateOf(saved.selected?.takeIf { it in validCells })
+    }
     var showErrors by remember(difficulty) { mutableStateOf(false) }
     var message by remember(difficulty) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(difficulty, store) { store.saveDifficulty(difficulty) }
+    LaunchedEffect(difficulty, store) {
+        snapshotFlow { grid.toMap() to selected }.collect { (g, s) ->
+            store.save(difficulty, g, s)
+        }
+    }
 
     val result: JudgeResult by remember(puzzle) {
         derivedStateOf { Judge.judge(puzzle, grid) }
