@@ -19,14 +19,16 @@ explicitly changes them.
 - **Graphical honeycomb board**, tap-a-cell + on-screen A–Z palette.
 - **Pinned presets** (never change these or level ids change):
 
-  | difficulty | kind / size | seed              |
-  | ---------- | ----------- | ----------------- |
-  | easy       | rect 5×5    | `1000 + level_id` |
-  | medium     | hex edge 5  | `1000 + level_id` |
-  | hard       | hex edge 5  | `1000 + level_id` |
+  | difficulty | kind / size | seed                   |
+  | ---------- | ----------- | ---------------------- |
+  | easy       | rect 5×5    | `1_000_000 + level_id` |
+  | medium     | hex edge 5  | `2_000_000 + level_id` |
+  | hard       | hex edge 5  | `3_000_000 + level_id` |
 
+  Each difficulty has its own seed space on purpose: medium and hard share a
+  geometry, so a shared seed would give the same truth grid (same answer).
   Full default alphabet `A–Z`, always `--no-unique`, CLI command is
-  `hexregex gen --edge 5 --difficulty <tier> --seed $((1000+L)) --no-unique`.
+  `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L)) --no-unique`.
 
 ## Module layout (keep the engine free of Android)
 

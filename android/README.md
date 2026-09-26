@@ -60,18 +60,22 @@ A level id is reproducible only if its generation parameters are frozen. These
 are the pinned presets (full CLI default alphabet `A–Z`, constructive mode so no
 solver is needed):
 
-| difficulty | kind / size | seed            | Command                                                                    |
-| ---------- | ----------- | --------------- | -------------------------------------------------------------------------- |
-| easy       | rect, 5×5   | `SEED_BASE + L` | `hexregex gen --edge 5 --difficulty easy   --seed $((1000+L)) --no-unique` |
-| medium     | hex, edge 5 | `SEED_BASE + L` | `hexregex gen --edge 5 --difficulty medium --seed $((1000+L)) --no-unique` |
-| hard       | hex, edge 5 | `SEED_BASE + L` | `hexregex gen --edge 5 --difficulty hard   --seed $((1000+L)) --no-unique` |
+| difficulty | kind / size | seed            | Command                                                                       |
+| ---------- | ----------- | --------------- | ----------------------------------------------------------------------------- |
+| easy       | rect, 5×5   | `1_000_000 + L` | `hexregex gen --edge 5 --difficulty easy   --seed $((1000000+L)) --no-unique` |
+| medium     | hex, edge 5 | `2_000_000 + L` | `hexregex gen --edge 5 --difficulty medium --seed $((2000000+L)) --no-unique` |
+| hard       | hex, edge 5 | `3_000_000 + L` | `hexregex gen --edge 5 --difficulty hard   --seed $((3000000+L)) --no-unique` |
 
-`SEED_BASE = 1000` and level id `L` so far (fixtures use `L = 0`). Changing any
-of `edge`, `kind`, `alphabet`, `difficulty`, `--unique` or `--no-unique` changes
-the puzzle for the same seed, so these must stay in lockstep with whatever the
-generator port uses.
+Each difficulty gets its own seed space: with a shared seed, medium and hard
+(identical geometry) would produce the _same truth grid_ for the same level,
+i.e. the same answer. Level id `L` is 0-based (`L = 0` is "Level 1"). Changing
+any of `edge`, `kind`, `alphabet`, `difficulty`, `--unique` or `--no-unique`
+changes the puzzle for the same seed, so these must stay in lockstep with the
+generator port.
 
-Regenerate the fixtures with:
+The engine's own acceptance fixtures (`android/fixtures/*`, `generated/*`) are
+independent of the app mapping and keep their original seeds; regenerate them
+with:
 
 ```bash
 hexregex gen --edge 5 --difficulty easy   --seed 1000 --no-unique -o android/fixtures/rect_easy_1000.json

@@ -57,19 +57,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
-/** Pinned generator presets: edge 5, full alphabet, constructive mode. */
-enum class Difficulty(val label: String, val tier: String) {
-    EASY("Easy", "easy"),
-    MEDIUM("Medium", "medium"),
-    HARD("Hard", "hard"),
+/**
+ * Pinned generator presets: edge 5, full alphabet, constructive mode.
+ *
+ * Each difficulty has its own seed space so the same level number is a
+ * genuinely different puzzle (medium and hard would otherwise share a truth
+ * grid, since the seed alone decides it).
+ */
+enum class Difficulty(val label: String, val tier: String, val seedBase: Int) {
+    EASY("Easy", "easy", 1_000_000),
+    MEDIUM("Medium", "medium", 2_000_000),
+    HARD("Hard", "hard", 3_000_000),
 }
-
-/** `level_id -> seed`; frozen forever so a level id always means one puzzle. */
-const val SEED_BASE = 1000
 
 private fun generatePuzzle(difficulty: Difficulty, level: Int): Puzzle =
     Generator.constructive(
-        GenConfig(edge = 5, difficulty = difficulty.tier, seed = SEED_BASE + level),
+        GenConfig(edge = 5, difficulty = difficulty.tier, seed = difficulty.seedBase + level),
     )
 
 /** Reading-direction arrow; hex X reads bottom-to-top, rect X top-to-bottom. */
