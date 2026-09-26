@@ -19,20 +19,26 @@ explicitly changes them.
 - **Graphical honeycomb board**, tap-a-cell + on-screen A–Z palette.
 - **Pinned presets** (never change these or level ids change):
 
-  | difficulty | kind / size | seed                   | target score |
-  | ---------- | ----------- | ---------------------- | ------------ |
-  | easy       | rect 5×5    | `1_000_000 + level_id` | (band)       |
-  | medium     | hex edge 5  | `2_000_000 + level_id` | `73`         |
-  | hard       | hex edge 5  | `3_000_000 + level_id` | `85`         |
+  | difficulty | kind / size | seed                   | mode                                                      |
+  | ---------- | ----------- | ---------------------- | --------------------------------------------------------- |
+  | easy       | rect 5×5    | `1_000_000 + level_id` | constructive                                              |
+  | medium     | hex edge 5  | `2_000_000 + level_id` | constructive (`--difficulty hard --target-score 85`)      |
+  | hard       | hex edge 5  | `3_000_000 + level_id` | **unique** (`--difficulty hard --unique --allow-backref`) |
 
   Each difficulty has its own seed space on purpose: medium and hard share a
   geometry, so a shared seed would give the same truth grid (same answer).
-  `--target-score` sets clue opacity, and medium/hard also apply position-free
-  MIT-style clues (`.*c.*`, `[SET]*c[SET]*`, class/alt stars, backref repeats)
-  so letters are not pinned to cells; `shape_dot_skeleton` (fixed-length) is
-  excluded for them. Full default alphabet `A–Z`, always `--no-unique`, CLI
-  command is `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L))
-[--target-score <t>] --no-unique`.
+  Constructive medium/hard apply position-free MIT-style clues (`.*c.*`,
+  `[SET]*c[SET]*`, class/alt stars, backref repeats) so letters are not pinned
+  to cells; `shape_dot_skeleton` (fixed-length) is excluded for them. Full
+  default alphabet `A–Z`.
+
+  **HARD is a bundled bank + background refill**: unique generation takes
+  seconds-to-minutes, so 50 unique hard puzzles ship in
+  `app/src/main/assets/hard_bank.json` (regenerate with the engine's
+  `generateHardBank` Gradle task); on device a background effect keeps ~50
+  unsolved hard levels cached ahead. `Generator.unique` is _total_ (always
+  returns the most-relaxed unique puzzle for a seed, never raises), so
+  `seed = base + level` is a valid index with no skips.
 
 - **Identity, not level number.** A puzzle is `(GENERATOR_VERSION, seed)`; the
   level number is just this version's level↔seed bijection. Progress is keyed

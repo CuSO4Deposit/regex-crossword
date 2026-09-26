@@ -60,25 +60,36 @@ A level id is reproducible only if its generation parameters are frozen. These
 are the pinned presets (full CLI default alphabet `A–Z`, constructive mode so no
 solver is needed):
 
-| difficulty | kind / size | seed            | target | Command                                                                                         |
-| ---------- | ----------- | --------------- | ------ | ----------------------------------------------------------------------------------------------- |
-| easy       | rect, 5×5   | `1_000_000 + L` | (band) | `hexregex gen --edge 5 --difficulty easy   --seed $((1000000+L)) --no-unique`                   |
-| medium     | hex, edge 5 | `2_000_000 + L` | `73`   | `hexregex gen --edge 5 --difficulty medium --seed $((2000000+L)) --target-score 73 --no-unique` |
-| hard       | hex, edge 5 | `3_000_000 + L` | `85`   | `hexregex gen --edge 5 --difficulty hard   --seed $((3000000+L)) --target-score 85 --no-unique` |
+| difficulty | kind / size | seed            | mode         | notes                                                                                          |
+| ---------- | ----------- | --------------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| easy       | rect, 5×5   | `1_000_000 + L` | constructive | `--difficulty easy --no-unique`                                                                |
+| medium     | hex, edge 5 | `2_000_000 + L` | constructive | `--difficulty hard --target-score 85 --no-unique` (the former hard: opaque, several solutions) |
+| hard       | hex, edge 5 | `3_000_000 + L` | **unique**   | `--difficulty hard --unique --allow-backref` (solver feedback; one solution)                   |
 
-`--target-score` drives clue opacity, and medium/hard additionally apply
-position-free MIT-style structures (`.*c.*` spans, `[SET]*c[SET]*`,
-class/alternation stars, backref repeats) so letters sit inside `.`/classes
-instead of pinning cells. medium ≈ the old "hard"; hard is looser and
-structurally closer to the MIT original. (Fixed-length skeleton clues, which
+medium/hard additionally apply position-free MIT-style structures (`.*c.*`
+spans, `[SET]*c[SET]*`, class/alternation stars, backref repeats) so letters sit
+inside `.`/classes instead of pinning cells. (Fixed-length skeleton clues, which
 pin one cell per character, are deliberately not used for these.)
+
+**HARD is a bundled bank + background refill.** Unique generation takes seconds
+(Python) to minutes (on a phone), so 50 unique hard puzzles are shipped in
+`app/src/main/assets/hard_bank.json` (`seed = 3_000_000 + i`), regenerated with:
+
+```bash
+./gradlew -p android/engine generateHardBank \
+    -Pout=android/app/src/main/assets/hard_bank.json -Pcount=50
+```
+
+On device, `PuzzleStore` serves a hard level from the bank, else a local file
+cache, else generates it on a background thread; while a hard level is open a
+background effect tops the cache up so ~50 unsolved levels are always ready.
 
 Each difficulty gets its own seed space: with a shared seed, medium and hard
 (identical geometry) would produce the _same truth grid_ for the same level,
 i.e. the same answer. Level id `L` is 0-based (`L = 0` is "Level 1"). Changing
-any of `edge`, `kind`, `alphabet`, `difficulty`, `target-score`, `--unique` or
-`--no-unique` changes the puzzle for the same seed, so these must stay in
-lockstep with the generator port.
+any option (`edge`, `kind`, `alphabet`, `difficulty`, `target-score`, `--unique`,
+`--allow-backref`, …) changes the puzzle for the same seed, so these must stay
+in lockstep with the generator port.
 
 **Puzzle identity vs level number.** A puzzle is identified by
 `(GENERATOR_VERSION, seed)`; the level number is only this version's
@@ -162,15 +173,21 @@ reloaded from the overflow menu. Pressing Check only outlines
 complete-but-wrong lines in red, so the family colours always stay visible;
 any edit clears that red until Check is pressed again.
 
-The solver (`regex_engine.py` + `solver.py`) is already ported and used for
-hints, progress (grid + notes + selection) is written to disk on **every
-change** with a synchronous commit plus an `ON_STOP` flush, there is a
-notes/candidate mode, and the constructive generator (`_generate_constructive`
-and CPython `random.Random`) is ported and byte-identical to the CLI. The app
-drives `level_id -> seed = 1000 + level_id -> Generator` with background
-prefetch, so levels are infinite and shareable.
+The solver (`regex_engine.py` + `solver.py`), the constructive generator
+(`_generate_constructive`, byte-identical to the CLI) and the **unique**
+generator (solver feedback, made total so any seed yields a unique puzzle) are
+ported; `PyRandom` matches CPython, and difficulty scoring
+(`clue_style`/`measure`) is ported too. Progress is written to disk on every
+change with a synchronous commit plus an `ON_STOP` flush; notes/candidate mode
+and a **Givens** button (fill cells forced by a single clue) are available.
+
+Levels follow `level_id -> seed = seedBase + level_id -> Generator`. EASY and
+MEDIUM are constructive (instant); HARD loads unique puzzles from the bundled
+bank and generates more in the background.
 
 1. Share by level id / daily challenge; per-line live feedback while typing.
-2. Move heavy solving (Hint/Solve) off the main thread.
-3. Optional: per-difficulty level counters, candidate auto-pruning from solver
-   domains, progress export.
+2. Move Hint/Solve off the main thread.
+3. Optional: candidate auto-pruning from solver domains, progress export.
+
+Bump `GENERATOR_VERSION` (in `Levels.kt`) whenever the generator, the presets or
+the seed bases change.
