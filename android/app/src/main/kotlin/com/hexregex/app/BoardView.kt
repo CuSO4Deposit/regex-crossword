@@ -46,10 +46,12 @@ fun BoardView(
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
 
-    val activeCells = remember(selected, geometry) {
-        selected?.let { geometry.linesForCell(it).flatMap { line -> line.cells }.toSet() }
-            ?: emptySet()
+    val activeByFamily = remember(selected, geometry) {
+        selected?.let { cell ->
+            geometry.linesForCell(cell).associate { line -> line.family to line.cells.toSet() }
+        } ?: emptyMap()
     }
+    val emptyCells = remember { emptySet<Cell>() }
     val wrongCells: Set<Cell> =
         if (showErrors) {
             result.failures
@@ -61,7 +63,9 @@ fun BoardView(
 
     val colors = BoardColors(
         idle = scheme.surfaceVariant,
-        active = scheme.secondaryContainer,
+        xTint = FamilyColors.tint("x"),
+        yTint = FamilyColors.tint("y"),
+        zTint = FamilyColors.tint("z"),
         selected = scheme.primary,
         wrong = scheme.errorContainer,
         border = scheme.outline,
@@ -97,7 +101,9 @@ fun BoardView(
                 val fill = when {
                     cell == selected -> colors.selected
                     cell in wrongCells -> colors.wrong
-                    cell in activeCells -> colors.active
+                    cell in (activeByFamily["x"] ?: emptyCells) -> colors.xTint
+                    cell in (activeByFamily["y"] ?: emptyCells) -> colors.yTint
+                    cell in (activeByFamily["z"] ?: emptyCells) -> colors.zTint
                     else -> colors.idle
                 }
                 val path = Path()
@@ -165,7 +171,9 @@ fun BoardView(
 
 private data class BoardColors(
     val idle: Color,
-    val active: Color,
+    val xTint: Color,
+    val yTint: Color,
+    val zTint: Color,
     val selected: Color,
     val wrong: Color,
     val border: Color,

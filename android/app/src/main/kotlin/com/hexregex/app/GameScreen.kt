@@ -1,14 +1,23 @@
 package com.hexregex.app
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -100,6 +111,8 @@ fun GameScreen() {
     var notesMode by remember(difficulty, level) { mutableStateOf(false) }
     var showErrors by remember(difficulty, level) { mutableStateOf(false) }
     var message by remember(difficulty, level) { mutableStateOf<String?>(null) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmSolve by remember { mutableStateOf(false) }
 
     // Prefetch the next few levels off the main thread.
     LaunchedEffect(difficulty, level) {
@@ -175,7 +188,25 @@ fun GameScreen() {
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(title = { Text("Regex Crossword") })
+                TopAppBar(
+                    title = { Text("Regex Crossword") },
+                    actions = {
+                        Box {
+                            TextButton(onClick = { menuOpen = true }) {
+                                Text("\u22EE", style = MaterialTheme.typography.titleLarge)
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Solve (fill a solution)") },
+                                    onClick = {
+                                        menuOpen = false
+                                        confirmSolve = true
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
                 TabRow(selectedTabIndex = difficulty.ordinal) {
                     for (option in Difficulty.entries) {
                         Tab(
@@ -274,9 +305,27 @@ fun GameScreen() {
                         message = null
                     },
                 ) { Text("Clear") }
-                OutlinedButton(onClick = { solveAll() }) { Text("Solve") }
             }
         }
+    }
+
+    if (confirmSolve) {
+        AlertDialog(
+            onDismissRequest = { confirmSolve = false },
+            title = { Text("Solve?") },
+            text = { Text("Fill one complete valid solution? This overwrites your current entries.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmSolve = false
+                        solveAll()
+                    },
+                ) { Text("Solve") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSolve = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
@@ -302,12 +351,22 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                 lineResult.ok -> "\u2713"
                 else -> "\u2717"
             }
-            Row {
-                Text(
-                    text = "${line.family.uppercase()}: ",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(FamilyColors.label(line.family)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = line.family.uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = clue,
                     style = MaterialTheme.typography.bodyMedium,
