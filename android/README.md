@@ -138,7 +138,7 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
   tracking. The app declares **no permissions**, which is ideal.
 - Provide `fastlane/metadata/android/<locale>/` (title, short/full description,
   icon, screenshots) and a changelog per `versionCode` when you publish.
-- Use a stable `applicationId` (`com.hexregex.app`) and sign with your own key;
+- Use a stable `applicationId` (`io.github.cuso4deposit.regexcrossword`) and sign with your own key;
   F-Droid can also keep its own signing key.
 - Repro builds are easier if you pin dependency versions (done here via the
   Compose BOM and explicit versions).

@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "hexregex-android"
+rootProject.name = "regex-crossword-android"
 
 include(":app")
 include(":engine")

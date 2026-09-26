@@ -135,7 +135,7 @@ repo):
 nixpkgs#libdrm` gives a `-bin` output; use `nixpkgs#libdrm^out` for the lib.
 4. Boot windowed with `-gpu swiftshader_indirect`, wait on
    `adb shell getprop sys.boot_completed`, `adb install -r`, then
-   `am start -n com.hexregex.app/.MainActivity` and
+   `am start -n io.github.cuso4deposit.regexcrossword/.MainActivity` and
    `adb exec-out screencap -p` for screenshots.
 5. Stop with `adb emu kill` or by closing the window.
 

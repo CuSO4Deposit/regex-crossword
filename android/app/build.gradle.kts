@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hexregex.app"
+    namespace = "io.github.cuso4deposit.regexcrossword.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.hexregex.app"
+        applicationId = "io.github.cuso4deposit.regexcrossword"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

@@ -1,0 +1,39 @@
+package io.github.cuso4deposit.regexcrossword.app
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+
+/** Two screens: level select, then the puzzle. */
+@Composable
+fun HexregexApp() {
+    val context = LocalContext.current
+    val store = remember { GameStore(context) }
+    var open by remember { mutableStateOf<PuzzleId?>(null) }
+    var version by remember { mutableStateOf(0) }
+
+    val current = open
+    if (current == null) {
+        LevelSelectScreen(
+            store = store,
+            version = version,
+            onOpen = { difficulty, level -> open = puzzleIdFor(difficulty, level) },
+        )
+    } else {
+        BackHandler {
+            open = null
+            version++
+        }
+        GameScreen(
+            id = current,
+            onBack = {
+                open = null
+                version++
+            },
+        )
+    }
+}
