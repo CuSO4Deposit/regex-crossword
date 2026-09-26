@@ -30,6 +30,12 @@ explicitly changes them.
   Full default alphabet `A–Z`, always `--no-unique`, CLI command is
   `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L)) --no-unique`.
 
+- **Identity, not level number.** A puzzle is `(GENERATOR_VERSION, seed)`; the
+  level number is just this version's level↔seed bijection. Progress is keyed
+  by `gv<version>_<difficulty>_<seed>`. Bump `GENERATOR_VERSION` (in
+  `Levels.kt`) on _any_ change to the generator, presets, or seed bases, so old
+  saves never silently point at a different puzzle.
+
 ## Module layout (keep the engine free of Android)
 
 - `android/engine/` — pure `kotlin("jvm")` lib, **no Android dependency**, so it

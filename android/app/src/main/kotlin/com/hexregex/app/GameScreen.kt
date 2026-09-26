@@ -46,8 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hexregex.engine.Cell
-import com.hexregex.engine.GenConfig
-import com.hexregex.engine.Generator
 import com.hexregex.engine.Judge
 import com.hexregex.engine.JudgeResult
 import com.hexregex.engine.Puzzle
@@ -56,24 +54,6 @@ import com.hexregex.engine.SolverLimitException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
-
-/**
- * Pinned generator presets: edge 5, full alphabet, constructive mode.
- *
- * Each difficulty has its own seed space so the same level number is a
- * genuinely different puzzle (medium and hard would otherwise share a truth
- * grid, since the seed alone decides it).
- */
-enum class Difficulty(val label: String, val tier: String, val seedBase: Int) {
-    EASY("Easy", "easy", 1_000_000),
-    MEDIUM("Medium", "medium", 2_000_000),
-    HARD("Hard", "hard", 3_000_000),
-}
-
-private fun generatePuzzle(difficulty: Difficulty, level: Int): Puzzle =
-    Generator.constructive(
-        GenConfig(edge = 5, difficulty = difficulty.tier, seed = difficulty.seedBase + level),
-    )
 
 /** Reading-direction arrow; hex X reads bottom-to-top, rect X top-to-bottom. */
 private fun directionSymbol(kind: String, family: String): String = when (family) {
@@ -84,9 +64,10 @@ private fun directionSymbol(kind: String, family: String): String = when (family
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
+fun GameScreen(id: PuzzleId, onBack: () -> Unit) {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
+    val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
 
     val cache = remember { HashMap<String, Puzzle>() }
     val cacheOrder = remember { ArrayDeque<String>() }
@@ -95,12 +76,12 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
         while (cacheOrder.size > 64) cache.remove(cacheOrder.removeFirst())
     }
 
-    val key = "${difficulty.name}/$level"
+    val key = "${id.version}/${id.difficulty.name}/${id.seed}"
     val puzzle = remember(key) {
-        cache[key] ?: generatePuzzle(difficulty, level).also { cachePut(key, it) }
+        cache[key] ?: generatePuzzle(id).also { cachePut(key, it) }
     }
     val solver = remember(puzzle) { Solver(puzzle) }
-    val saved = remember(key) { store.load(difficulty, level) }
+    val saved = remember(key) { store.load(id) }
     val validCells = remember(puzzle) { puzzle.geometry.cells().toHashSet() }
     val grid = remember(key) {
         mutableStateMapOf<Cell, Char>().apply {
@@ -120,27 +101,27 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
     var message by remember(key) { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmSolve by remember { mutableStateOf(false) }
-    var solvedNow by remember(key) { mutableStateOf(store.isSolved(difficulty, level)) }
+    var confirmClear by remember { mutableStateOf(false) }
+    var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
 
-    LaunchedEffect(difficulty, level) {
+    LaunchedEffect(id) {
         for (offset in 1..3) {
-            val nextKey = "${difficulty.name}/${level + offset}"
+            val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, level + offset))
+            val nextKey = "${nextId.version}/${nextId.difficulty.name}/${nextId.seed}"
             if (!cache.containsKey(nextKey)) {
-                val generated = withContext(Dispatchers.Default) {
-                    generatePuzzle(difficulty, level + offset)
-                }
+                val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
                 cachePut(nextKey, generated)
             }
         }
     }
-    LaunchedEffect(difficulty, level, store) { store.savePosition(difficulty, level) }
-    LaunchedEffect(difficulty, level, store) {
+    LaunchedEffect(id, store) { store.savePosition(id) }
+    LaunchedEffect(id, store) {
         snapshotFlow { Triple(grid.toMap(), notes.toMap(), selected) }.collect { (g, n, s) ->
-            withContext(Dispatchers.IO) { store.save(difficulty, level, g, n, s) }
+            withContext(Dispatchers.IO) { store.save(id, g, n, s) }
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        store.save(difficulty, level, grid.toMap(), notes.toMap(), selected)
+        store.save(id, grid.toMap(), notes.toMap(), selected)
     }
 
     val result: JudgeResult by remember(puzzle) {
@@ -148,7 +129,7 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
     }
     LaunchedEffect(result.solved) {
         if (result.solved) {
-            store.markSolved(difficulty, level, grid.toMap())
+            store.markSolved(id, grid.toMap())
             solvedNow = true
         }
     }
@@ -201,7 +182,7 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
     }
 
     fun loadSavedSolution() {
-        val stored = store.solvedGrid(difficulty, level)
+        val stored = store.solvedGrid(id)
         if (stored == null) {
             message = "No saved solution for this level."
             return
@@ -217,7 +198,7 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${difficulty.label} \u00B7 Level ${level + 1}") },
+                title = { Text("${id.difficulty.label} \u00B7 Level ${level + 1}") },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("\u2190", style = MaterialTheme.typography.titleLarge)
@@ -319,13 +300,7 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
                     OutlinedButton(onClick = { notesMode = true }) { Text("Notes") }
                 }
                 OutlinedButton(
-                    onClick = {
-                        grid.clear()
-                        notes.clear()
-                        selected = null
-                        showErrors = false
-                        message = null
-                    },
+                    onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
                 ) { Text("Clear") }
             }
         }
@@ -346,6 +321,29 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { confirmSolve = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Clear?") },
+            text = { Text("Erase every letter and note on this level? This cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmClear = false
+                        grid.clear()
+                        notes.clear()
+                        selected = null
+                        showErrors = false
+                        message = null
+                    },
+                ) { Text("Clear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClear = false }) { Text("Cancel") }
             },
         )
     }

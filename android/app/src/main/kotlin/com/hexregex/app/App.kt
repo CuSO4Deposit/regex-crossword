@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 fun HexregexApp() {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
-    var open by remember { mutableStateOf<Pair<Difficulty, Int>?>(null) }
+    var open by remember { mutableStateOf<PuzzleId?>(null) }
     var version by remember { mutableStateOf(0) }
 
     val current = open
@@ -21,7 +21,7 @@ fun HexregexApp() {
         LevelSelectScreen(
             store = store,
             version = version,
-            onOpen = { difficulty, level -> open = difficulty to level },
+            onOpen = { difficulty, level -> open = puzzleIdFor(difficulty, level) },
         )
     } else {
         BackHandler {
@@ -29,8 +29,7 @@ fun HexregexApp() {
             version++
         }
         GameScreen(
-            difficulty = current.first,
-            level = current.second,
+            id = current,
             onBack = {
                 open = null
                 version++

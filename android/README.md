@@ -73,6 +73,16 @@ any of `edge`, `kind`, `alphabet`, `difficulty`, `--unique` or `--no-unique`
 changes the puzzle for the same seed, so these must stay in lockstep with the
 generator port.
 
+**Puzzle identity vs level number.** A puzzle is identified by
+`(GENERATOR_VERSION, seed)`; the level number is only this version's
+level↔seed bijection (`seedFor` / `levelOf`, one per difficulty). Progress
+(grid, notes, selection, solved grid) is keyed by that identity, stored as
+`gv<version>_<difficulty>_<seed>`, and the last position records
+`position_version` / `position_difficulty` / `position_seed`. Bump
+`GENERATOR_VERSION` on _any_ change to the generator, the presets, or the seed
+bases: old saves then stay under their own version instead of silently pointing
+at a different puzzle.
+
 The engine's own acceptance fixtures (`android/fixtures/*`, `generated/*`) are
 independent of the app mapping and keep their original seeds; regenerate them
 with:

@@ -37,10 +37,11 @@ fun LevelSelectScreen(
     version: Int,
     onOpen: (Difficulty, Int) -> Unit,
 ) {
-    var difficulty by remember { mutableStateOf(store.loadDifficulty(Difficulty.MEDIUM)) }
+    var difficulty by remember { mutableStateOf(store.loadPosition()?.difficulty ?: Difficulty.MEDIUM) }
     val solved = remember(version, difficulty) { store.solvedLevels(difficulty) }
-    val lastDifficulty = remember(version) { store.loadDifficulty(Difficulty.MEDIUM) }
-    val lastLevel = remember(version) { store.loadLevel() }
+    val lastId = remember(version) { store.loadPosition() }
+    val lastDifficulty = lastId?.difficulty ?: Difficulty.MEDIUM
+    val lastLevel = lastId?.let { levelOf(it.difficulty, it.seed) }?.takeIf { it >= 0 } ?: 0
     var count by remember { mutableStateOf(100) }
 
     Scaffold(

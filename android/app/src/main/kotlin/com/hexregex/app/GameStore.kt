@@ -4,10 +4,10 @@ import android.content.Context
 import com.hexregex.engine.Cell
 
 /**
- * Persists progress keyed by (difficulty, level), plus the last position.
- *
- * Levels are infinite (`seed = SEED_BASE + level_id`), so each level gets its
- * own record. Every change is written with a synchronous `commit()` so an
+ * Persists progress keyed by puzzle identity `(version, difficulty, seed)`,
+ * not by level number. The key literally records the generator version and the
+ * true seed, so a version bump can never make an old record collide with a
+ * different puzzle. Every change is written with a synchronous `commit()` so an
  * accidental crash cannot lose the player's work.
  */
 class GameStore(context: Context) {
@@ -19,79 +19,81 @@ class GameStore(context: Context) {
         val selected: Cell?,
     )
 
-    fun loadDifficulty(fallback: Difficulty): Difficulty {
-        val name = prefs.getString(KEY_DIFFICULTY, null) ?: return fallback
-        return Difficulty.entries.firstOrNull { it.name == name } ?: fallback
-    }
-
-    fun loadLevel(): Int = prefs.getInt(KEY_LEVEL, 0)
-
-    fun savePosition(difficulty: Difficulty, level: Int) {
-        prefs.edit()
-            .putString(KEY_DIFFICULTY, difficulty.name)
-            .putInt(KEY_LEVEL, level)
-            .commit()
-    }
-
-    fun load(difficulty: Difficulty, level: Int): SavedState {
-        val grid = decodeGrid(prefs.getString(gridKey(difficulty, level), null))
-        val notes = decodeNotes(prefs.getString(notesKey(difficulty, level), null))
-        val selected = decodeCell(prefs.getString(selectedKey(difficulty, level), null))
+    fun load(id: PuzzleId): SavedState {
+        val grid = decodeGrid(prefs.getString(gridKey(id), null))
+        val notes = decodeNotes(prefs.getString(notesKey(id), null))
+        val selected = decodeCell(prefs.getString(selectedKey(id), null))
         return SavedState(grid, notes, selected)
     }
 
-    fun save(
-        difficulty: Difficulty,
-        level: Int,
-        grid: Map<Cell, Char>,
-        notes: Map<Cell, Set<Char>>,
-        selected: Cell?,
-    ) {
+    fun save(id: PuzzleId, grid: Map<Cell, Char>, notes: Map<Cell, Set<Char>>, selected: Cell?) {
         prefs.edit()
-            .putString(gridKey(difficulty, level), encodeGrid(grid))
-            .putString(notesKey(difficulty, level), encodeNotes(notes))
-            .putString(selectedKey(difficulty, level), selected?.let { encodeCell(it) })
+            .putString(gridKey(id), encodeGrid(grid))
+            .putString(notesKey(id), encodeNotes(notes))
+            .putString(selectedKey(id), selected?.let { encodeCell(it) })
             .commit()
     }
 
-    private fun suffix(difficulty: Difficulty, level: Int) = "${difficulty.name}_$level"
-
-    /** Mark a level solved and remember the grid that solved it. */
-    fun markSolved(difficulty: Difficulty, level: Int, grid: Map<Cell, Char>) {
+    /** Mark a puzzle solved and remember the grid that solved it. */
+    fun markSolved(id: PuzzleId, grid: Map<Cell, Char>) {
         prefs.edit()
-            .putBoolean(solvedKey(difficulty, level), true)
-            .putString(solutionKey(difficulty, level), encodeGrid(grid))
+            .putBoolean(solvedKey(id), true)
+            .putString(solutionKey(id), encodeGrid(grid))
             .commit()
     }
 
-    fun isSolved(difficulty: Difficulty, level: Int): Boolean =
-        prefs.getBoolean(solvedKey(difficulty, level), false)
+    fun isSolved(id: PuzzleId): Boolean = prefs.getBoolean(solvedKey(id), false)
 
-    /** The stored winning grid for a solved level, if any. */
-    fun solvedGrid(difficulty: Difficulty, level: Int): Map<Cell, Char>? =
-        prefs.getString(solutionKey(difficulty, level), null)?.let { decodeGrid(it) }
+    /** The stored winning grid for a solved puzzle, if any. */
+    fun solvedGrid(id: PuzzleId): Map<Cell, Char>? =
+        prefs.getString(solutionKey(id), null)?.let { decodeGrid(it) }
 
-    /** Level ids (0-based) marked solved for a difficulty. */
+    /**
+     * Level numbers solved for a difficulty under the **current** generator
+     * version; seeds are read from the keys and mapped back through [levelOf].
+     */
     fun solvedLevels(difficulty: Difficulty): Set<Int> {
-        val prefix = "solved_${difficulty.name}_"
+        val prefix = "solved_${basePrefix(difficulty)}"
         val out = HashSet<Int>()
         for (key in prefs.all.keys) {
             if (key.startsWith(prefix)) {
-                key.removePrefix(prefix).toIntOrNull()?.let { out.add(it) }
+                val seed = key.removePrefix(prefix).toIntOrNull() ?: continue
+                val level = levelOf(difficulty, seed)
+                if (level >= 0) out.add(level)
             }
         }
         return out
     }
 
-    private fun solvedKey(difficulty: Difficulty, level: Int) = "solved_${suffix(difficulty, level)}"
+    fun savePosition(id: PuzzleId) {
+        prefs.edit()
+            .putInt(KEY_POSITION_VERSION, id.version)
+            .putString(KEY_POSITION_DIFFICULTY, id.difficulty.name)
+            .putInt(KEY_POSITION_SEED, id.seed)
+            .commit()
+    }
 
-    private fun solutionKey(difficulty: Difficulty, level: Int) = "solution_${suffix(difficulty, level)}"
+    /** The last puzzle identity, or null if none / from another version. */
+    fun loadPosition(): PuzzleId? {
+        if (!prefs.contains(KEY_POSITION_SEED)) return null
+        val version = prefs.getInt(KEY_POSITION_VERSION, -1)
+        val difficulty = prefs.getString(KEY_POSITION_DIFFICULTY, null)
+            ?.let { name -> Difficulty.entries.firstOrNull { it.name == name } }
+            ?: return null
+        val seed = prefs.getInt(KEY_POSITION_SEED, -1)
+        if (version != GENERATOR_VERSION || seed < 0) return null
+        return PuzzleId(version, difficulty, seed)
+    }
 
-    private fun gridKey(difficulty: Difficulty, level: Int) = "grid_${suffix(difficulty, level)}"
+    private fun basePrefix(difficulty: Difficulty) = "gv${GENERATOR_VERSION}_${difficulty.name}_"
 
-    private fun notesKey(difficulty: Difficulty, level: Int) = "notes_${suffix(difficulty, level)}"
+    private fun base(id: PuzzleId) = "gv${id.version}_${id.difficulty.name}_${id.seed}"
 
-    private fun selectedKey(difficulty: Difficulty, level: Int) = "selected_${suffix(difficulty, level)}"
+    private fun gridKey(id: PuzzleId) = "grid_${base(id)}"
+    private fun notesKey(id: PuzzleId) = "notes_${base(id)}"
+    private fun selectedKey(id: PuzzleId) = "selected_${base(id)}"
+    private fun solvedKey(id: PuzzleId) = "solved_${base(id)}"
+    private fun solutionKey(id: PuzzleId) = "solution_${base(id)}"
 
     private fun encodeGrid(grid: Map<Cell, Char>): String =
         grid.entries.joinToString(";") { "${it.key.r},${it.key.c},${it.value}" }
@@ -141,7 +143,8 @@ class GameStore(context: Context) {
     }
 
     private companion object {
-        const val KEY_DIFFICULTY = "position_difficulty"
-        const val KEY_LEVEL = "position_level"
+        const val KEY_POSITION_VERSION = "position_version"
+        const val KEY_POSITION_DIFFICULTY = "position_difficulty"
+        const val KEY_POSITION_SEED = "position_seed"
     }
 }
