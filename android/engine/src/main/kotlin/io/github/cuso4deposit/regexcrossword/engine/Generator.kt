@@ -107,12 +107,21 @@ object Generator {
                     candidates = shaperNames
                 }
                 "medium" -> {
-                    nStructural = rng.randint(0, maxOf(2, keys.size / 8))
-                    candidates = structural + "contains"
+                    nStructural = rng.randint(0, maxOf(2, keys.size / 5))
+                    candidates = structural + listOf("contains", "contains", "shape_literal_skel")
                 }
                 else -> {
-                    nStructural = rng.randint(keys.size / 3, maxOf(keys.size / 3, keys.size / 2))
-                    candidates = structural + listOf("contains", "contains", "dotstar")
+                    nStructural = rng.randint((keys.size * 3) / 4, keys.size)
+                    candidates = List(4) { "contains" } +
+                        List(3) { "shape_literal_skel" } +
+                        List(2) { "shape_alt_star" } +
+                        List(2) { "shape_class_star" } +
+                        listOf(
+                            "shape_class_word",
+                            "shape_negclass_word",
+                            "shape_repeat_block",
+                            "dotstar",
+                        )
                 }
             }
 
@@ -132,6 +141,44 @@ object Generator {
                 }
                 if (newTokens == null) continue
                 if (acceptable(key, newTokens)) tokens[key] = newTokens.toMutableList()
+            }
+
+            if (cfg.difficulty == "hard") {
+                // No cell may be pinned by a single line: replace any line that
+                // is still literal with a position-free whole-line clue.
+                val depot = listOf(
+                    "dotstar_word",
+                    "dotstar_word",
+                    "shape_class_star",
+                    "shape_class_star",
+                    "shape_alt_star",
+                    "shape_class_word",
+                    "shape_negclass_word",
+                )
+                for (key in tokens.keys.toList()) {
+                    val text = texts.getValue(key)
+                    val toks = tokens.getValue(key)
+                    if (toks.none { it.single && it.hi - it.lo == 1 }) continue
+                    for (attempt in 0 until 4) {
+                        val op = rng.choice(depot)
+                        val newTokens = if (op == "dotstar_word") {
+                            listOf(
+                                Frag(
+                                    ".*" + PyRe.escape(rng.choice(text.toList()).toString()) + ".*",
+                                    0,
+                                    text.length,
+                                    false,
+                                ),
+                            )
+                        } else {
+                            applyShaper(op, text, cfg.alphabet, rng)
+                        }
+                        if (newTokens != null && acceptable(key, newTokens)) {
+                            tokens[key] = newTokens.toMutableList()
+                            break
+                        }
+                    }
+                }
             }
 
             fun isLiteralFrag(tok: Frag, text: String): Boolean =

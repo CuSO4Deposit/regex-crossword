@@ -163,6 +163,39 @@ class Solver(
 
     fun solveFromScratch(): Map<Cell, Char>? = solveWith(emptyMap())
 
+    /**
+     * Letters forced by a *single* line: cells whose feasible letter set over
+     * one clue is a singleton. These are the "givens" a player can fill just
+     * by reading one clue, without cross-referencing.
+     */
+    fun givenLetters(): Map<Cell, Char> {
+        val full = alphabet.toSet()
+        val out = HashMap<Cell, Char>()
+        for ((lineIndex, line) in geo.lines.withIndex()) {
+            val pattern = compiled[lineIndex]
+            val cells = line.cells
+            val base = List(cells.size) { full }
+            for (i in cells.indices) {
+                val keep = ArrayList<Char>()
+                for (ch in alphabet) {
+                    val allowed = base.toMutableList()
+                    allowed[i] = setOf(ch)
+                    if (RegexEngine.feasibleCached(allowed, pattern)) keep.add(ch)
+                }
+                if (keep.size == 1) {
+                    val cell = cells[i]
+                    val ch = keep[0]
+                    val prev = out[cell]
+                    when {
+                        prev == null -> out[cell] = ch
+                        prev != ch -> out.remove(cell)
+                    }
+                }
+            }
+        }
+        return out
+    }
+
     /** Re-check a complete solution with whole-string Java regex matching. */
     fun verify(solution: Map<Cell, Char>) {
         for ((lineIndex, line) in geo.lines.withIndex()) {

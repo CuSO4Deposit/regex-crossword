@@ -58,6 +58,27 @@ class SolverTest {
     }
 
     @Test
+    fun `givenLetters fills literals and ignores wildcards`() {
+        val unique = Puzzle.fromMap(
+            mapOf(
+                "kind" to "rect", "rows" to 2L, "cols" to 2L,
+                "author" to "t", "name" to "t",
+                "x" to listOf("AB", "CD"), "y" to listOf("AC", "BD"),
+            ),
+        )
+        assertEquals(4, Solver(unique).givenLetters().size)
+
+        val trivial = Puzzle.fromMap(
+            mapOf(
+                "kind" to "rect", "rows" to 2L, "cols" to 2L,
+                "author" to "t", "name" to "t",
+                "x" to listOf(".*", ".*"), "y" to listOf(".*", ".*"),
+            ),
+        )
+        assertTrue(Solver(trivial).givenLetters().isEmpty())
+    }
+
+    @Test
     fun `every fixture clue is feasible with the full alphabet`() {
         val alphabet = ('A'..'Z').toList()
         for (name in Fixtures.names) {

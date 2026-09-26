@@ -796,13 +796,24 @@ def _generate_constructive(cfg: GenConfig):
             n_structural = rng.randint(0, min(3, cfg.max_chunk_alts + 1))
             candidates = list(_SHAPERS)
         elif cfg.difficulty == "medium":
-            n_structural = rng.randint(0, max(2, len(keys) // 8))
-            candidates = structural + ["contains"]
+            n_structural = rng.randint(0, max(2, len(keys) // 5))
+            candidates = structural + ["contains", "contains", "shape_literal_skel"]
         else:
-            n_structural = rng.randint(
-                len(keys) // 3, max(len(keys) // 3, len(keys) // 2)
+            # MIT-grade looseness: cover most lines with position-free clues,
+            # weighted towards ``.*``/``.*c.*`` and literal skeletons.
+            n_structural = rng.randint((len(keys) * 3) // 4, len(keys))
+            candidates = (
+                ["contains"] * 4
+                + ["shape_literal_skel"] * 3
+                + ["shape_alt_star"] * 2
+                + ["shape_class_star"] * 2
+                + [
+                    "shape_class_word",
+                    "shape_negclass_word",
+                    "shape_repeat_block",
+                    "dotstar",
+                ]
             )
-            candidates = structural + ["contains", "contains", "dotstar"]
 
         def _acceptable(key, new_tokens):
             rendered = render_tokens(new_tokens)
@@ -822,6 +833,35 @@ def _generate_constructive(cfg: GenConfig):
                 continue
             if _acceptable(key, new_tokens):
                 tokens[key] = new_tokens
+
+        if cfg.difficulty == "hard":
+            # No cell may be pinned by a single line: replace any line that is
+            # still literal with a position-free whole-line clue.
+            depot = (
+                "dotstar_word",
+                "dotstar_word",
+                "shape_class_star",
+                "shape_class_star",
+                "shape_alt_star",
+                "shape_class_word",
+                "shape_negclass_word",
+            )
+            for key in list(tokens):
+                text = texts[key]
+                toks = tokens[key]
+                if not any(tok.single and tok.hi - tok.lo == 1 for tok in toks):
+                    continue
+                for _try in range(4):
+                    op = rng.choice(depot)
+                    if op == "dotstar_word":
+                        new_tokens = [
+                            Frag(".*" + re.escape(rng.choice(text)) + ".*", 0, len(text), False)
+                        ]
+                    else:
+                        new_tokens = _SHAPERS[op][0](text, cfg.alphabet, rng, cfg)
+                    if new_tokens is not None and _acceptable(key, new_tokens):
+                        tokens[key] = new_tokens
+                        break
 
         # ensure every line is non-literal, then dial the overall literal ratio
         def literal_fraction() -> float:

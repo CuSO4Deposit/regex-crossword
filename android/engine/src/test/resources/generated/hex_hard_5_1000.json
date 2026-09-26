@@ -85,36 +85,36 @@
   ],
   "edge": 5,
   "x": [
-    "F.*M.*",
-    "N.[GLT][^Q].N",
+    "(?:FPN|MY)*",
+    "(?:ELN|NBG)*",
     "(?:VVH|CV|ZW)*",
-    ".[DSY][^K].[GLV][HVZ]..",
-    ".[^G].[^J].L.F.",
-    ".F.*H.*..",
-    ".JFROZ.",
-    ".[ACP].[^D]W.",
-    "(?:WWW|JA)*"
+    ".*Y.*",
+    ".*L.*H.*F.*D.*",
+    ".*L.*",
+    "(?:FRO|UJ|ZV)*",
+    "[CGIKOQW]*",
+    "(?:JAW|WW)*"
   ],
   "y": [
-    "YNVY.",
-    "..CO.[IRY]",
-    "[^S]..V.LV",
-    "...[GVX]L[EHZ]Z.",
-    ".*B.*V.*",
-    "[^J]*W[^J]*",
-    "ZYGRF(W)\\1*",
-    "DI..CA",
-    "[^N].[GUZ]IJ"
+    "[ADFNVY]*Y[ADFNVY]*",
+    ".*M.*O.*F.*R.*",
+    "(?:HVH|LV|NE)*",
+    "(?:PGV|VLH|ZO)*",
+    "FBVXPEO(W)\\1*",
+    ".*N.*W.*A.*W.*",
+    "[^M]*Z[^M]*",
+    ".*D.*",
+    "[ABIJKNRUVZ]*J[ABIJKNRUVZ]*"
   ],
   "z": [
-    "(?:ZDK|FN)*",
-    "P[BDS]WYI.*A.*",
-    "NGV[GKU]G.[^O]",
-    "...[DFX].R[^H]I",
-    "[ACFGHJLMOPSVY]*J[ACFGHJLMOPSVY]*",
-    ".CVL.[GRS]W.",
-    "VO[BHV].O.W",
-    "Y[EFN]LZ.[BKW]",
-    "....."
+    ".*N.*D.*",
+    "(?:PBW|YIA)*",
+    ".*U.*",
+    ".*M.*R.*",
+    "[CDFHJLMOPVY]*C[CDFHJLMOPVY]*",
+    ".*C.*E.*W.*",
+    "[EHOQTVW]*",
+    "[CFHLVWYZ]*",
+    ".*V.*O.*W.*"
   ]
 }

@@ -187,8 +187,25 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
         message = "Filled one valid solution."
     }
 
-    fun loadSavedSolution() {
-        val stored = store.solvedGrid(id)
+    fun fillGivens() {
+        val givens = solver.givenLetters()
+        var filled = 0
+        for ((cell, ch) in givens) {
+            if (grid[cell] != ch) {
+                grid[cell] = ch
+                notes.remove(cell)
+                filled++
+            }
+        }
+        showErrors = false
+        message = if (filled == 0) {
+            "No directly-given letters to fill."
+        } else {
+            "Filled $filled given letter(s)."
+        }
+    }
+
+    fun loadSavedSolution() {        val stored = store.solvedGrid(id)
         if (stored == null) {
             message = "No saved solution for this level."
             return
@@ -300,6 +317,7 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
             ) {
                 Button(onClick = { showErrors = true }) { Text("Check") }
                 OutlinedButton(onClick = { hint() }) { Text("Hint") }
+                OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
                 if (notesMode) {
                     Button(onClick = { notesMode = false }) { Text("Notes on") }
                 } else {
