@@ -61,10 +61,10 @@ Hexagon (Medium / Hard)
 
 Controls
   Tap a cell, then tap a letter to fill it. Use the on-screen keyboard; the
-  backspace clears the selected cell.
+  backspace clears the selected cell. Filling a line completely and wrongly
+  outlines it in red automatically; finishing the whole grid shows a
+  "Solved!" dialog.
 
-  Check   mark every line that is full but wrong (red outline). Any edit
-          clears the marks until you press Check again.
   Hint    reveal one cell from a completion consistent with what you have.
   Givens  fill every cell that a single clue already pins down.
   Notes   toggle pencil marks: tap letters to add/remove candidates.

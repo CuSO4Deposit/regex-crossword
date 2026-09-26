@@ -37,7 +37,6 @@ fun BoardView(
     notes: Map<Cell, Set<Char>>,
     selected: Cell?,
     result: JudgeResult,
-    showErrors: Boolean,
     onCellTap: (Cell) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -52,15 +51,11 @@ fun BoardView(
         } ?: emptyMap()
     }
     val emptyCells = remember { emptySet<Cell>() }
-    val wrongCells: Set<Cell> =
-        if (showErrors) {
-            result.failures
-                .filter { it.complete }
-                .flatMap { failure -> geometry.line(failure.family, failure.index).cells }
-                .toSet()
-        } else {
-            emptySet()
-        }
+    // Always outline complete-but-wrong lines; incomplete lines are just unfinished.
+    val wrongCells: Set<Cell> = result.failures
+        .filter { it.complete }
+        .flatMap { failure -> geometry.line(failure.family, failure.index).cells }
+        .toSet()
 
     val colors = BoardColors(
         idle = scheme.surfaceVariant,

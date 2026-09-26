@@ -174,7 +174,6 @@ private fun GameContent(
         mutableStateOf(saved.selected?.takeIf { it in validCells })
     }
     var notesMode by remember(key) { mutableStateOf(false) }
-    var showErrors by remember(key) { mutableStateOf(false) }
     var message by remember(key) { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmSolve by remember { mutableStateOf(false) }
@@ -231,7 +230,6 @@ private fun GameContent(
         grid[target] = completion.getValue(target)
         notes.remove(target)
         selected = target
-        showErrors = false
         message = "Hint: revealed one cell consistent with your grid."
     }
 
@@ -250,7 +248,6 @@ private fun GameContent(
         grid.putAll(completion)
         notes.clear()
         selected = null
-        showErrors = false
         message = "Filled one valid solution."
     }
 
@@ -264,7 +261,6 @@ private fun GameContent(
                 filled++
             }
         }
-        showErrors = false
         message = if (filled == 0) {
             "No directly-given letters to fill."
         } else {
@@ -281,7 +277,6 @@ private fun GameContent(
         grid.putAll(stored.filterKeys { it in validCells })
         notes.clear()
         selected = null
-        showErrors = false
         message = "Loaded the saved solution."
     }
 
@@ -342,13 +337,12 @@ private fun GameContent(
                 notes = notes,
                 selected = selected,
                 result = result,
-                showErrors = showErrors,
                 onCellTap = { selected = it },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
             )
-            StatusLine(result, showErrors, message)
+            StatusLine(result, message)
             LetterPalette(
                 alphabet = alphabet,
                 onLetter = { letter ->
@@ -361,7 +355,6 @@ private fun GameContent(
                             grid[cell] = letter
                             notes.remove(cell)
                         }
-                        showErrors = false
                         message = null
                     }
                 },
@@ -372,7 +365,6 @@ private fun GameContent(
                         } else if (grid.remove(cell) == null) {
                             notes.remove(cell)
                         }
-                        showErrors = false
                         message = null
                     }
                 },
@@ -382,7 +374,6 @@ private fun GameContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Button(onClick = { showErrors = true }) { Text("Check") }
                 OutlinedButton(onClick = { hint() }) { Text("Hint") }
                 OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
                 if (notesMode) {
@@ -428,7 +419,6 @@ private fun GameContent(
                         grid.clear()
                         notes.clear()
                         selected = null
-                        showErrors = false
                         message = null
                     },
                 ) { Text("Clear") }
@@ -531,13 +521,14 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
 }
 
 @Composable
-private fun StatusLine(result: JudgeResult, showErrors: Boolean, message: String?) {
+private fun StatusLine(result: JudgeResult, message: String?) {
+    val unfinished = result.lines.count { !it.complete }
     val text = when {
         message != null -> message
         result.solved -> "Solved! Every line matches."
-        showErrors && result.complete -> "${result.failures.size} line(s) do not match."
-        showErrors -> "Some cells are still empty."
-        else -> "Fill all cells, then press Check."
+        result.complete -> "${result.failures.size} line(s) do not match."
+        unfinished > 0 -> "$unfinished line(s) still to fill."
+        else -> "Fill all cells."
     }
     Text(
         text = text,

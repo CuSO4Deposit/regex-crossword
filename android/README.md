@@ -169,9 +169,8 @@ chosen. Each line family is colour-coded (X blue / Y green / Z red) in both
 the clue panel and the board, with an arrow for the reading direction and a
 ring on the cell where reading starts. Completion status and the winning grid
 are stored per level, so a solved level can be reopened or its solution
-reloaded from the overflow menu. Pressing Check only outlines
-complete-but-wrong lines in red, so the family colours always stay visible;
-any edit clears that red until Check is pressed again.
+reloaded from the overflow menu. Lines that are full but wrong are outlined in
+red automatically (no Check button); the family colours stay visible.
 
 The solver (`regex_engine.py` + `solver.py`), the constructive generator
 (`_generate_constructive`, byte-identical to the CLI) and the **unique**
