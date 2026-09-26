@@ -64,12 +64,16 @@ solver is needed):
 | ---------- | ----------- | --------------- | ------------ | ---------------------------------------------------------------------------------------------- |
 | easy       | rect, 5×5   | `1_000_000 + L` | constructive | `--difficulty easy --no-unique`                                                                |
 | medium     | hex, edge 5 | `2_000_000 + L` | constructive | `--difficulty hard --target-score 85 --no-unique` (the former hard: opaque, several solutions) |
-| hard       | hex, edge 5 | `3_000_000 + L` | **unique**   | `--difficulty hard --unique --allow-backref` (solver feedback; one solution)                   |
+| hard       | hex, edge 5 | `3_000_000 + L` | **unique**   | `--difficulty hard --unique --allow-backref --target-score 76` (solver feedback; one solution) |
 
 medium/hard additionally apply position-free MIT-style structures (`.*c.*`
 spans, `[SET]*c[SET]*`, class/alternation stars, backref repeats) so letters sit
-inside `.`/classes instead of pinning cells. (Fixed-length skeleton clues, which
-pin one cell per character, are deliberately not used for these.)
+inside `.`/classes instead of pinning cells. `shape_dot_skeleton` (a
+fixed-length skeleton that pins one cell per character) is excluded from both
+constructive and unique generation. The Kotlin generator is byte-identical to
+the Python reference for the unique path too (`UniqueParityTest`), which needed
+`clueStyle` to mirror CPython's parser optimisations (flatten non-capturing
+groups, single-char alternation → class).
 
 **HARD is a bundled bank + background refill.** Unique generation takes seconds
 (Python) to minutes (on a phone), so 50 unique hard puzzles are shipped in

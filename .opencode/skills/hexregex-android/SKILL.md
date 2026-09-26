@@ -19,11 +19,11 @@ explicitly changes them.
 - **Graphical honeycomb board**, tap-a-cell + on-screen A–Z palette.
 - **Pinned presets** (never change these or level ids change):
 
-  | difficulty | kind / size | seed                   | mode                                                      |
-  | ---------- | ----------- | ---------------------- | --------------------------------------------------------- |
-  | easy       | rect 5×5    | `1_000_000 + level_id` | constructive                                              |
-  | medium     | hex edge 5  | `2_000_000 + level_id` | constructive (`--difficulty hard --target-score 85`)      |
-  | hard       | hex edge 5  | `3_000_000 + level_id` | **unique** (`--difficulty hard --unique --allow-backref`) |
+  | difficulty | kind / size | seed                   | mode                                                                        |
+  | ---------- | ----------- | ---------------------- | --------------------------------------------------------------------------- |
+  | easy       | rect 5×5    | `1_000_000 + level_id` | constructive                                                                |
+  | medium     | hex edge 5  | `2_000_000 + level_id` | constructive (`--difficulty hard --target-score 85`)                        |
+  | hard       | hex edge 5  | `3_000_000 + level_id` | **unique** (`--difficulty hard --unique --allow-backref --target-score 76`) |
 
   Each difficulty has its own seed space on purpose: medium and hard share a
   geometry, so a shared seed would give the same truth grid (same answer).
