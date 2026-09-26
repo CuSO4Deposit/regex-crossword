@@ -31,13 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hexregex.engine.Cell
 import com.hexregex.engine.Judge
 import com.hexregex.engine.JudgeResult
 import com.hexregex.engine.Puzzle
 import com.hexregex.engine.Solver
 import com.hexregex.engine.SolverLimitException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 
 /** Built-in fixtures, one per pinned difficulty preset (seed 1000). */
 enum class Difficulty(val label: String, val asset: String) {
@@ -77,10 +81,15 @@ fun GameScreen() {
     var message by remember(difficulty) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(difficulty, store) { store.saveDifficulty(difficulty) }
+    // Persist on every change (not only on exit), off the main thread.
     LaunchedEffect(difficulty, store) {
         snapshotFlow { Triple(grid.toMap(), notes.toMap(), selected) }.collect { (g, n, s) ->
-            store.save(difficulty, g, n, s)
+            withContext(Dispatchers.IO) { store.save(difficulty, g, n, s) }
         }
+    }
+    // Belt-and-braces: also flush when the app leaves the foreground.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        store.save(difficulty, grid.toMap(), notes.toMap(), selected)
     }
 
     val result: JudgeResult by remember(puzzle) {

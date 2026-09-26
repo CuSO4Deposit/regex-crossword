@@ -40,11 +40,13 @@ class GameStore(context: Context) {
         notes: Map<Cell, Set<Char>>,
         selected: Cell?,
     ) {
+        // commit() writes synchronously so a change survives an immediate
+        // crash or process kill; callers run it off the main thread.
         prefs.edit()
             .putString(gridKey(difficulty), encodeGrid(grid))
             .putString(notesKey(difficulty), encodeNotes(notes))
             .putString(selectedKey(difficulty), selected?.let { encodeCell(it) })
-            .apply()
+            .commit()
     }
 
     private fun gridKey(difficulty: Difficulty) = "grid_${difficulty.name}"

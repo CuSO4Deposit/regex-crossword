@@ -124,9 +124,9 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 ## Next steps
 
 The solver (`regex_engine.py` + `solver.py`) is already ported and used for
-hints, progress (grid + notes + selection) is saved and restored per
-difficulty, and there is a notes/candidate mode, so the app never needs the
-stored solution.
+hints, progress (grid + notes + selection) is written to disk on **every
+change** with a synchronous commit plus an `ON_STOP` flush, and there is a
+notes/candidate mode, so the app never needs the stored solution.
 
 1. **Port the constructive generator** (`hexregex/generator.py`,
    `_generate_constructive`) together with CPython's `random.Random` (MT19937 +
