@@ -124,8 +124,9 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 ## Next steps
 
 The solver (`regex_engine.py` + `solver.py`) is already ported and used for
-hints, and progress is saved and restored per difficulty, so the app never
-needs the stored solution.
+hints, progress (grid + notes + selection) is saved and restored per
+difficulty, and there is a notes/candidate mode, so the app never needs the
+stored solution.
 
 1. **Port the constructive generator** (`hexregex/generator.py`,
    `_generate_constructive`) together with CPython's `random.Random` (MT19937 +
@@ -134,6 +135,5 @@ puzzle` is byte-identical to `hexregex gen`. Wire `Difficulty` to
    `SEED_BASE + level`.
 2. Level pipeline: level navigator, prefetch `L+1..L+3` on a background thread,
    cache generated JSON.
-3. Notes mode, per-line live feedback while typing, daily challenge / share by
-   level id.
+3. Per-line live feedback while typing, daily challenge / share by level id.
 4. Move puzzle generation and heavy solving off the main thread.

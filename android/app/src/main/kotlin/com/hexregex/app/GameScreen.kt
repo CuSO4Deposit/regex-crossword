@@ -64,16 +64,22 @@ fun GameScreen() {
             putAll(saved.grid.filterKeys { it in validCells })
         }
     }
+    val notes = remember(difficulty) {
+        mutableStateMapOf<Cell, Set<Char>>().apply {
+            putAll(saved.notes.filterKeys { it in validCells })
+        }
+    }
     var selected by remember(difficulty) {
         mutableStateOf(saved.selected?.takeIf { it in validCells })
     }
+    var notesMode by remember(difficulty) { mutableStateOf(false) }
     var showErrors by remember(difficulty) { mutableStateOf(false) }
     var message by remember(difficulty) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(difficulty, store) { store.saveDifficulty(difficulty) }
     LaunchedEffect(difficulty, store) {
-        snapshotFlow { grid.toMap() to selected }.collect { (g, s) ->
-            store.save(difficulty, g, s)
+        snapshotFlow { Triple(grid.toMap(), notes.toMap(), selected) }.collect { (g, n, s) ->
+            store.save(difficulty, g, n, s)
         }
     }
 
@@ -103,6 +109,7 @@ fun GameScreen() {
             return
         }
         grid[target] = completion.getValue(target)
+        notes.remove(target)
         selected = target
         message = "Hint: revealed one cell consistent with your grid."
     }
@@ -120,6 +127,7 @@ fun GameScreen() {
         }
         grid.clear()
         grid.putAll(completion)
+        notes.clear()
         selected = null
         message = "Filled one valid solution."
     }
@@ -150,6 +158,7 @@ fun GameScreen() {
             BoardView(
                 puzzle = puzzle,
                 grid = grid,
+                notes = notes,
                 selected = selected,
                 result = result,
                 showErrors = showErrors || result.complete,
@@ -162,15 +171,26 @@ fun GameScreen() {
             LetterPalette(
                 alphabet = alphabet,
                 onLetter = { letter ->
-                    selected?.let {
-                        grid[it] = letter
+                    selected?.let { cell ->
+                        if (notesMode) {
+                            val current = notes[cell] ?: emptySet()
+                            val updated = if (letter in current) current - letter else current + letter
+                            if (updated.isEmpty()) notes.remove(cell) else notes[cell] = updated
+                        } else {
+                            grid[cell] = letter
+                            notes.remove(cell)
+                        }
                         showErrors = false
                         message = null
                     }
                 },
                 onClear = {
-                    selected?.let {
-                        grid.remove(it)
+                    selected?.let { cell ->
+                        if (notesMode) {
+                            notes.remove(cell)
+                        } else if (grid.remove(cell) == null) {
+                            notes.remove(cell)
+                        }
                         showErrors = false
                         message = null
                     }
@@ -183,9 +203,15 @@ fun GameScreen() {
             ) {
                 Button(onClick = { showErrors = true }) { Text("Check") }
                 OutlinedButton(onClick = { hint() }) { Text("Hint") }
+                if (notesMode) {
+                    Button(onClick = { notesMode = false }) { Text("Notes on") }
+                } else {
+                    OutlinedButton(onClick = { notesMode = true }) { Text("Notes") }
+                }
                 OutlinedButton(
                     onClick = {
                         grid.clear()
+                        notes.clear()
                         selected = null
                         showErrors = false
                         message = null

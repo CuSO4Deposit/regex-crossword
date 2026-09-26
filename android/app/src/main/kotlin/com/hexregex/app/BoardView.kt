@@ -34,6 +34,7 @@ import com.hexregex.engine.Puzzle
 fun BoardView(
     puzzle: Puzzle,
     grid: Map<Cell, Char>,
+    notes: Map<Cell, Set<Char>>,
     selected: Cell?,
     result: JudgeResult,
     showErrors: Boolean,
@@ -67,6 +68,7 @@ fun BoardView(
         letter = scheme.onSurface,
         selectedLetter = scheme.onPrimary,
         wrongLetter = scheme.onErrorContainer,
+        note = scheme.onSurfaceVariant,
     )
 
     BoxWithConstraints(modifier) {
@@ -107,6 +109,7 @@ fun BoardView(
                 drawPath(path, color = colors.border, style = Stroke(width = 1.dp.toPx()))
 
                 val letter = grid[cell]
+                val center = layout.centers.getValue(cell)
                 if (letter != null) {
                     val color = when {
                         cell == selected -> colors.selectedLetter
@@ -117,7 +120,6 @@ fun BoardView(
                         AnnotatedString(letter.toString()),
                         baseStyle.copy(color = color),
                     )
-                    val center = layout.centers.getValue(cell)
                     drawText(
                         textLayoutResult = measured,
                         topLeft = Offset(
@@ -125,6 +127,36 @@ fun BoardView(
                             center.y - measured.size.height / 2f,
                         ),
                     )
+                } else {
+                    val candidates = notes[cell]
+                    if (!candidates.isNullOrEmpty()) {
+                        val sorted = candidates.sorted()
+                        val cols = if (sorted.size > 12) 5 else 4
+                        val rows = (sorted.size + cols - 1) / cols
+                        val mini = layout.textSize * 0.30f
+                        val noteStyle = baseStyle.copy(
+                            color = colors.note,
+                            fontSize = with(density) { mini.toSp() },
+                            fontWeight = FontWeight.Normal,
+                        )
+                        for ((index, candidate) in sorted.withIndex()) {
+                            val row = index / cols
+                            val col = index % cols
+                            val dx = (col - (cols - 1) / 2f) * mini * 0.95f
+                            val dy = (row - (rows - 1) / 2f) * mini
+                            val measured = measurer.measure(
+                                AnnotatedString(candidate.toString()),
+                                noteStyle,
+                            )
+                            drawText(
+                                textLayoutResult = measured,
+                                topLeft = Offset(
+                                    center.x + dx - measured.size.width / 2f,
+                                    center.y + dy - measured.size.height / 2f,
+                                ),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -140,4 +172,5 @@ private data class BoardColors(
     val letter: Color,
     val selectedLetter: Color,
     val wrongLetter: Color,
+    val note: Color,
 )
