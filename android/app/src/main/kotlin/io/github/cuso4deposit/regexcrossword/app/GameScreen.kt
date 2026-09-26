@@ -66,33 +66,38 @@ private fun directionSymbol(kind: String, family: String): String = when (family
 
 @Composable
 fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
-    val cache = remember { HashMap<String, Puzzle>() }
-    val cacheOrder = remember { ArrayDeque<String>() }
-
-    fun cachePut(key: String, value: Puzzle) {
-        if (cache.put(key, value) == null) cacheOrder.addLast(key)
-        while (cacheOrder.size > 64) cache.remove(cacheOrder.removeFirst())
-    }
-
+    val context = LocalContext.current
+    val store = remember { GameStore(context) }
+    val puzzleStore = remember { PuzzleStore(context) }
+    val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
     val key = "${id.version}/${id.difficulty.name}/${id.seed}"
-    var puzzle by remember(key) { mutableStateOf(cache[key]) }
+
+    val preloaded = remember(key) { puzzleStore.loadOrNull(id) }
+    var puzzle by remember(key) { mutableStateOf(preloaded) }
     LaunchedEffect(key) {
         if (puzzle == null) {
             val generated = withContext(Dispatchers.Default) { generatePuzzle(id) }
-            cachePut(key, generated)
+            puzzleStore.savePuzzle(id.seed, generated)
             puzzle = generated
         }
     }
+
+    // Keep a buffer of ~50 unsolved unique puzzles ahead while playing HARD.
     LaunchedEffect(key) {
-        val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
-        val ahead = if (id.difficulty.unique) 1 else 3
-        for (offset in 1..ahead) {
-            val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, level + offset))
-            val nextKey = "${nextId.version}/${nextId.difficulty.name}/${nextId.seed}"
-            if (!cache.containsKey(nextKey)) {
-                val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
-                cachePut(nextKey, generated)
+        if (!id.difficulty.unique) return@LaunchedEffect
+        var unsolved = 0
+        var offset = 0
+        while (unsolved < 50 && offset < 300) {
+            val nextLevel = level + offset
+            val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, nextLevel))
+            if (!store.isSolved(nextId)) {
+                if (!puzzleStore.has(nextId.seed)) {
+                    val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
+                    puzzleStore.savePuzzle(nextId.seed, generated)
+                }
+                unsolved++
             }
+            offset++
         }
     }
 

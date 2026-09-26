@@ -31,3 +31,17 @@ tasks.test {
         events("passed", "failed", "skipped")
     }
 }
+
+// Offline HARD bank: ./gradlew -p engine generateHardBank -Pout=<path> -Pcount=50
+tasks.register<JavaExec>("generateHardBank") {
+    group = "build"
+    description = "Generate the bundled HARD puzzle bank (unique puzzles)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("io.github.cuso4deposit.regexcrossword.engine.BankGeneratorKt")
+    maxHeapSize = "2g"
+    args(
+        (project.findProperty("out") as String?) ?: "hard_bank.json",
+        (project.findProperty("count") as String?) ?: "50",
+        (project.findProperty("base") as String?) ?: "3000000",
+    )
+}
