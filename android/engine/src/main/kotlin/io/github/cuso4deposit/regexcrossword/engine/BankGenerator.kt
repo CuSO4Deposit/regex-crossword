@@ -18,13 +18,19 @@ fun main(args: Array<String>) {
     val puzzles = ArrayList<Any?>()
     for (i in 0 until count) {
         val puzzle = Generator.unique(
-            GenConfig(edge = 5, difficulty = "hard", seed = base + i, allowBackref = true),
+            GenConfig(
+                edge = 5,
+                difficulty = "hard",
+                seed = base + i,
+                allowBackref = true,
+                targetScore = 78.0,
+            ),
         )
         puzzles.add(puzzle.toOrderedMap())
         System.err.println("bank: $i/$count seed=${base + i}")
     }
     val root = LinkedHashMap<String, Any?>()
-    root["version"] = 5
+    root["version"] = 6
     root["base"] = base
     root["puzzles"] = puzzles
     File(out).writeText(PyJson.dumpsFile(root))

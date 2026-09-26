@@ -18,7 +18,7 @@ import io.github.cuso4deposit.regexcrossword.engine.Puzzle
  * Bump it on *any* change to the generator algorithm, the pinned presets, or
  * the seed bases.
  */
-const val GENERATOR_VERSION = 5
+const val GENERATOR_VERSION = 6
 
 data class PuzzleId(val version: Int, val difficulty: Difficulty, val seed: Int)
 
@@ -39,7 +39,7 @@ enum class Difficulty(
 ) {
     EASY("Easy", "easy", 1_000_000, null, false),
     MEDIUM("Medium", "hard", 2_000_000, 85.0, false),
-    HARD("Hard", "hard", 3_000_000, null, true),
+    HARD("Hard", "hard", 3_000_000, 78.0, true),
 }
 
 /** The versioned level -> seed bijection for one difficulty. */
