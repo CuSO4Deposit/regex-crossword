@@ -453,7 +453,9 @@ def _choose_operator(rng, cfg, usage=None, alt_quota=None, light_set=False) -> s
     names = [n for n in _OPERATORS if n != "repeat_backref"]
     if cfg.allow_backref:
         names.append("repeat_backref")
-    names.extend(_SHAPERS)
+    # Fixed-length skeletons pin one cell per character; they make puzzles
+    # readable and are excluded from unique generation.
+    names.extend(n for n in _SHAPERS if n != "shape_dot_skeleton")
     quota = cfg.max_chunk_alts if alt_quota is None else alt_quota
     names = [
         n

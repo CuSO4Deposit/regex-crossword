@@ -178,7 +178,8 @@ generator (solver feedback, made total so any seed yields a unique puzzle) are
 ported; `PyRandom` matches CPython, and difficulty scoring
 (`clue_style`/`measure`) is ported too. Progress is written to disk on every
 change with a synchronous commit plus an `ON_STOP` flush; notes/candidate mode
-and a **Givens** button (fill cells forced by a single clue) are available.
+and a **Givens** button (fill the letters a clue literally writes down at a
+fixed position — a cheap AST scan, no search) are available.
 
 Levels follow `level_id -> seed = seedBase + level_id -> Generator`. EASY and
 MEDIUM are constructive (instant); HARD loads unique puzzles from the bundled

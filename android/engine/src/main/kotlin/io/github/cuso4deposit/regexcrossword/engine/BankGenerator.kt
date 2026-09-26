@@ -18,13 +18,7 @@ fun main(args: Array<String>) {
     val puzzles = ArrayList<Any?>()
     for (i in 0 until count) {
         val puzzle = Generator.unique(
-            GenConfig(
-                edge = 5,
-                difficulty = "hard",
-                seed = base + i,
-                allowBackref = true,
-                targetScore = 78.0,
-            ),
+            GenConfig(edge = 5, difficulty = "hard", seed = base + i, allowBackref = true, targetScore = 76.0),
         )
         puzzles.add(puzzle.toOrderedMap())
         System.err.println("bank: $i/$count seed=${base + i}")

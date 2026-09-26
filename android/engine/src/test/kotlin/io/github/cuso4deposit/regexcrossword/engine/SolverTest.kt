@@ -76,6 +76,30 @@ class SolverTest {
             ),
         )
         assertTrue(Solver(trivial).givenLetters().isEmpty())
+
+        // A literal at a fixed position is a given; `.*A.*` is not.
+        val fixedPosition = Puzzle.fromMap(
+            mapOf(
+                "kind" to "rect", "rows" to 1L, "cols" to 5L,
+                "author" to "t", "name" to "t",
+                "x" to listOf(".", ".", ".", ".", "."),
+                "y" to listOf("..RN."),
+            ),
+        )
+        val givens = Solver(fixedPosition).givenLetters()
+        assertEquals(2, givens.size)
+        assertEquals('R', givens[Cell(0, 2)])
+        assertEquals('N', givens[Cell(0, 3)])
+
+        val variable = Puzzle.fromMap(
+            mapOf(
+                "kind" to "rect", "rows" to 1L, "cols" to 5L,
+                "author" to "t", "name" to "t",
+                "x" to listOf(".", ".", ".", ".", "."),
+                "y" to listOf(".*A.*"),
+            ),
+        )
+        assertTrue(Solver(variable).givenLetters().isEmpty())
     }
 
     @Test

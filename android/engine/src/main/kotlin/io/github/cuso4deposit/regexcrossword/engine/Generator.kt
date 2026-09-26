@@ -610,7 +610,8 @@ object Generator {
         val names = ArrayList<String>()
         for (n in operatorNames) if (n != "repeat_backref") names.add(n)
         if (cfg.allowBackref) names.add("repeat_backref")
-        names.addAll(shaperNames)
+        // Fixed-length skeletons pin one cell per character; excluded here.
+        names.addAll(shaperNames.filter { it != "shape_dot_skeleton" })
         val quota = altQuota ?: cfg.maxChunkAlts
         val filtered = names.filter { !(it == "shape_alt_star" && (usage[it] ?: 0) >= quota) }
         return rng.choicesOne(filtered, filtered.map { operatorWeight(it) / (1.0 + (usage[it] ?: 0)) })

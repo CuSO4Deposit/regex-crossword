@@ -209,33 +209,15 @@ class Solver(
     }
 
     /**
-     * Letters forced by a *single* line: cells whose feasible letter set over
-     * one clue is a singleton. These are the "givens" a player can fill just
-     * by reading one clue, without cross-referencing.
+     * Cells a clue literally writes down at a fixed position. This is a cheap
+     * fixed-width AST scan ([pinnedLiterals]); it does **not** include letters
+     * only implied by classes, repeats or skeletons, and needs no search.
      */
     fun givenLetters(): Map<Cell, Char> {
-        val full = alphabet.toSet()
         val out = HashMap<Cell, Char>()
         for ((lineIndex, line) in geo.lines.withIndex()) {
-            val pattern = compiled[lineIndex]
-            val cells = line.cells
-            val base = List(cells.size) { full }
-            for (i in cells.indices) {
-                val keep = ArrayList<Char>()
-                for (ch in alphabet) {
-                    val allowed = base.toMutableList()
-                    allowed[i] = setOf(ch)
-                    if (RegexEngine.feasibleCached(allowed, pattern)) keep.add(ch)
-                }
-                if (keep.size == 1) {
-                    val cell = cells[i]
-                    val ch = keep[0]
-                    val prev = out[cell]
-                    when {
-                        prev == null -> out[cell] = ch
-                        prev != ch -> out.remove(cell)
-                    }
-                }
+            for ((offset, ch) in pinnedLiterals(compiled[lineIndex].ast)) {
+                if (offset in line.cells.indices) out[line.cells[offset]] = ch
             }
         }
         return out

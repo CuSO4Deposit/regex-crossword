@@ -294,6 +294,64 @@ object RegexEngine {
  * Python parses with `re._parser`; Kotlin has no public regex AST, so this
  * reimplements the small grammar the generator can emit.
  */
+/**
+ * Positions that a pattern forces to one exact literal character.
+ *
+ * A fixed-width scan: literals are pinned while the consumed length up to that
+ * point is fixed; on the first variable-width construct (`*`, `+`, `?`, `{m,n}`,
+ * a backreference or unequal-length alternation) the rest of the line is
+ * considered ambiguous. This is exactly "a letter written in the clue at a
+ * fixed position", and needs no feasibility search.
+ */
+fun pinnedLiterals(ast: List<RegexNode>): Map<Int, Char> {
+    fun analyze(nodes: List<RegexNode>): Pair<Int?, Map<Int, Char>> {
+        var width = 0
+        val pinned = LinkedHashMap<Int, Char>()
+        for (node in nodes) {
+            when (node) {
+                is LitNode -> {
+                    pinned[width] = node.ch
+                    width += 1
+                }
+                is AnyNode -> width += 1
+                is ClassNode -> width += 1
+                is AnchorNode -> {}
+                is GroupNode -> {
+                    val (bodyWidth, bodyPins) = analyze(node.body)
+                    if (bodyWidth == null) return null to pinned
+                    for ((offset, ch) in bodyPins) pinned[width + offset] = ch
+                    width += bodyWidth
+                }
+                is RepNode -> {
+                    if (node.min != node.max) return null to pinned
+                    val (bodyWidth, bodyPins) = analyze(node.body)
+                    if (bodyWidth == null) return null to pinned
+                    for (repeat in 0 until node.min) {
+                        for ((offset, ch) in bodyPins) pinned[width + repeat * bodyWidth + offset] = ch
+                    }
+                    width += node.min * bodyWidth
+                }
+                is AltNode -> {
+                    val results = node.branches.map { analyze(it) }
+                    val widths = results.map { it.first }
+                    if (widths.any { it == null } || widths.distinct().size != 1) return null to pinned
+                    val branchWidth = widths.first()!!
+                    for (offset in 0 until branchWidth) {
+                        val chars = results.mapNotNull { it.second[offset] }
+                        if (chars.size == results.size && chars.distinct().size == 1) {
+                            pinned[width + offset] = chars.first()
+                        }
+                    }
+                    width += branchWidth
+                }
+                is RefNode -> return null to pinned
+            }
+        }
+        return width to pinned
+    }
+    return analyze(ast).second
+}
+
 class RegexParser(private val source: String) {
     private var index = 0
     private var groupCounter = 0

@@ -45,7 +45,15 @@ private fun walkRegex(nodes: List<RegexNode>): Sequence<RegexNode> = sequence {
     }
 }
 
-/** Static style measurements of a clue set (no solving). */
+/**
+ * Static style measurements of a clue set (no solving), counting the same
+ * tokens as Python's `hexregex.difficulty.clue_style`.
+ *
+ * CPython's `re._parser` optimises before hexregex walks it: non-capturing
+ * groups are flattened (no node) and an alternation whose branches are all
+ * single literals becomes one character class. We mirror that here so the
+ * difficulty score — and therefore the unique generator — matches Python.
+ */
 fun clueStyle(clues: Map<String, List<String>>): Map<String, Double> {
     val families = listOf("x", "y", "z").filter { it in clues }
     var literals = 0
@@ -57,22 +65,59 @@ fun clueStyle(clues: Map<String, List<String>>): Map<String, Double> {
     var groups = 0
     var lines = 0
     var tokens = 0
+
+    fun count(nodes: List<RegexNode>) {
+        for (node in nodes) {
+            when (node) {
+                is LitNode -> {
+                    tokens++
+                    literals++
+                }
+                is AnyNode -> {
+                    tokens++
+                    anys++
+                }
+                is ClassNode -> {
+                    tokens++
+                    classes++
+                }
+                is GroupNode -> {
+                    if (node.gid == 0) {
+                        count(node.body) // non-capturing: flattened by CPython
+                    } else {
+                        tokens++
+                        groups++
+                        count(node.body)
+                    }
+                }
+                is RepNode -> {
+                    tokens++
+                    repeats++
+                    count(node.body)
+                }
+                is RefNode -> {
+                    tokens++
+                    backrefs++
+                }
+                is AnchorNode -> tokens++
+                is AltNode -> {
+                    if (node.branches.all { it.size == 1 && it[0] is LitNode }) {
+                        tokens++ // single-char alternation -> one class
+                        classes++
+                    } else {
+                        tokens++
+                        alternations++
+                        for (branch in node.branches) count(branch)
+                    }
+                }
+            }
+        }
+    }
+
     for (family in families) {
         for (pattern in clues.getValue(family)) {
             lines++
-            for (node in walkRegex(RegexEngine.compile(pattern).ast)) {
-                tokens++
-                when (node) {
-                    is LitNode -> literals++
-                    is AnyNode -> anys++
-                    is ClassNode -> classes++
-                    is RepNode -> repeats++
-                    is AltNode -> alternations++
-                    is RefNode -> backrefs++
-                    is GroupNode -> groups++
-                    is AnchorNode -> {}
-                }
-            }
+            count(RegexEngine.compile(pattern).ast)
         }
     }
     val literalRatio = if (tokens > 0) literals.toDouble() / tokens else 1.0

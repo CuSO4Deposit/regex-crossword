@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -56,7 +55,6 @@ import io.github.cuso4deposit.regexcrossword.engine.Solver
 import io.github.cuso4deposit.regexcrossword.engine.SolverLimitException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Reading-direction arrow; hex X reads bottom-to-top, rect X top-to-bottom. */
@@ -183,9 +181,6 @@ private fun GameContent(
     var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
     var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
     var showSolved by remember(key) { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    var givensCache by remember(key) { mutableStateOf<Map<Cell, Char>?>(null) }
-    var computingGivens by remember(key) { mutableStateOf(false) }
 
     LaunchedEffect(id, store) { store.savePosition(id) }
     LaunchedEffect(id, store) {
@@ -256,9 +251,9 @@ private fun GameContent(
         message = "Filled one valid solution."
     }
 
-    fun applyGivens(givens: Map<Cell, Char>) {
+    fun fillGivens() {
         var filled = 0
-        for ((cell, ch) in givens) {
+        for ((cell, ch) in solver.givenLetters()) {
             if (grid[cell] != ch) {
                 grid[cell] = ch
                 notes.remove(cell)
@@ -269,23 +264,6 @@ private fun GameContent(
             "No directly-given letters to fill."
         } else {
             "Filled $filled given letter(s)."
-        }
-    }
-
-    fun fillGivens() {
-        if (computingGivens) return
-        val cached = givensCache
-        if (cached != null) {
-            applyGivens(cached)
-            return
-        }
-        computingGivens = true
-        message = "Finding given letters\u2026"
-        scope.launch {
-            val givens = withContext(Dispatchers.Default) { solver.givenLetters() }
-            givensCache = givens
-            computingGivens = false
-            applyGivens(givens)
         }
     }
 

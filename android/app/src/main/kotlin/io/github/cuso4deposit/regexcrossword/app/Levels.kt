@@ -39,7 +39,7 @@ enum class Difficulty(
 ) {
     EASY("Easy", "easy", 1_000_000, null, false),
     MEDIUM("Medium", "hard", 2_000_000, 85.0, false),
-    HARD("Hard", "hard", 3_000_000, 78.0, true),
+    HARD("Hard", "hard", 3_000_000, 76.0, true),
 }
 
 /** The versioned level -> seed bijection for one difficulty. */

@@ -66,7 +66,8 @@ Controls
   "Solved!" dialog.
 
   Hint    reveal one cell from a completion consistent with what you have.
-  Givens  fill every cell that a single clue already pins down.
+  Givens  fill cells whose letter a clue literally writes down at a fixed
+          position (no search).
   Notes   toggle pencil marks: tap letters to add/remove candidates.
   Clear   erase the grid (asks first).
   Solve   (menu, top right) fill one valid solution after confirming.
