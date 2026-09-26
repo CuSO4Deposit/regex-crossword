@@ -758,7 +758,7 @@ def _generate_constructive(cfg: GenConfig):
     geo, families, lo, hi, target, literal_cap, _custom = _setup(cfg)
     alphabet = sorted(set(cfg.alphabet))
     dimension = len(families)
-    default_cap = {"easy": None, "medium": 0.75, "hard": 0.55}[cfg.difficulty]
+    default_cap = {"easy": None, "medium": 0.6, "hard": None}[cfg.difficulty]
     cap = cfg.max_literal_fraction if cfg.max_literal_fraction is not None else default_cap
     # figure out the opacity that lands on the target score
     floor = _static_score(geo.num_rows, len(alphabet), dimension, 0.0)

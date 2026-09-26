@@ -10,7 +10,7 @@ three line families (X / Y / Z); the rectangular easy form has two (rows and
 columns).
 
 The tool is pure Python (standard library only, no third-party dependencies)
-and offers five subcommands:
+and offers six subcommands:
 
 ```
 hexregex solve   puzzle.json [--show-stats] [--all] [--alphabet ABC...]
@@ -69,31 +69,89 @@ $ hexregex original --show-stats
 
 ## Generating
 
-`hexregex gen` follows **generate-and-test**:
+There are **two generation modes**, selected by `--unique` / `--no-unique`:
 
-1. Pick a true solution grid (random, or with `--message` hidden in the middle
-   row).
-2. Start with the most restrictive clue for every line (`re.escape` of its
-   true text).
-3. Repeatedly apply a random _relaxation_ step to a random line. Besides the
-   small per-token operators (wildcard `.`; classes `[...]` / `[^x]`; a span
-   replaced by `.*` or wrapped in `(?:...)?`; a periodic segment rewritten as
-   `(g)+` / `(...)\1*`; an alternation `(a|b|c)*`), there is a portfolio of
-   **MIT-style whole-line shapers**: meaningful classes `[SET]*c[SET]*`,
-   fixed-length skeletons like `..O[CDH][CNS]NT.`, literal-with-gaps
-   `.*T.*H.*O.*D.*`, negated classes `[^R]*N[^R]*`, factored alternation
-   `(?:DI|NS|TH)*`, and periodic back-references `prefix(block)\1*`. Operators
-   are picked with a **diversity penalty** (already-used kinds are
-   down-weighted) so clues do not collapse into repeated `.*X.*`. Every
-   candidate must still match the true text, and is kept only if the puzzle
-   stays unique (when `--unique`) and moves the solver statistics toward the
-   target.
-4. Optional `--templates` prefers built-in human-friendly patterns (in the
-   style of the original) whenever one matches a line.
+| mode             | flag                 | solves?                     | cost         | typical use                            |
+| ---------------- | -------------------- | --------------------------- | ------------ | -------------------------------------- |
+| **unique**       | `--unique` (default) | yes, after every relaxation | seconds      | one exact answer, curated puzzle banks |
+| **constructive** | `--no-unique`        | **no solving at all**       | milliseconds | infinite on-device levels              |
 
-Because every accepted clue still matches the pre-selected solution, the puzzle
-is always satisfiable. With `--no-unique` step 3 skips the solver entirely
-(no uniqueness to maintain), which is what makes generation instant.
+Both begin identically:
+
+1. **Pick a true solution grid.** One random letter per cell, or a phrase hidden
+   in the middle row with `--message`.
+2. **Write literal clues.** Initially every clue is `re.escape` of its true
+   word, so the true grid always satisfies all of them (the puzzle is always
+   solvable by construction).
+3. **Relax the clues** with a random portfolio. Per-token operators: wildcard
+   `.`, class `[...]`, negated class `[^x]`, a span replaced by `.*` or wrapped
+   in `(?:...)?`, a periodic segment rewritten as `(g)+` / `(...)\1*`, an
+   alternation `(a|b|c)*`. Whole-line **MIT-style shapers**: meaningful classes
+   `[SET]*c[SET]*`, fixed-length skeletons like `..O[CDH][CNS]NT.`,
+   literal-with-gaps `.*T.*H.*O.*D.*`, negated classes `[^R]*N[^R]*`, factored
+   alternations `(?:DI|NS|TH)*`, and periodic back-references
+   `prefix(block)\1*`. Whole-line shapes are capped by `--max-chunk-alts`
+   (default 2) so they stay a garnish, and operators carry a **diversity
+   penalty** so clues do not collapse into repeated `.*X.*`. Every candidate
+   still has to match the true text.
+4. Optional `--templates` tries a built-in list of human-friendly patterns (in
+   the style of the original) whenever one matches a line.
+
+What differs by mode is how step 3 is accepted:
+
+- **Unique mode** re-solves after each candidate and keeps it only if the
+  puzzle is still unique _and_ its measured score moved toward the target. This
+  feedback loop is what costs seconds — uniqueness cannot be maintained by
+  random relaxation alone.
+- **Constructive mode** never solves. It applies shapers, then flips random
+  literal tokens to wildcards/classes until the estimated **opacity** reaches
+  the target for the requested difficulty. Difficulty is computed statically
+  from the clue style, and multiple solutions are allowed (validate the
+  player's grid line-by-line — see below).
+
+### What each difficulty does
+
+|                              | `easy`                     | `medium`                                       | `hard`                                           |
+| ---------------------------- | -------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| default grid (`--kind auto`) | 2D rectangle               | 3D hexagon                                     | 3D hexagon                                       |
+| target score                 | `0.6 x` easy bound (~33)   | band middle (~62)                              | 10% into hard band (~73)                         |
+| every line non-literal?      | no (literals allowed)      | **yes**                                        | **yes**                                          |
+| literal-fraction cap         | none                       | `0.6`                                          | none                                             |
+| headline requirement         | readable words, few blanks | real cross-referencing (~2 in 5 tokens opaque) | MIT-level looseness, backrefs/chunk alternations |
+
+So: `easy` is a 2D grid you can mostly read off; `medium` is 3D with genuinely
+opaque clues; `hard` is 3D at MIT's looseness (the MIT original scores ≈71 and
+is the `hard` reference). `--difficulty` chooses the band, `--min-score` /
+`--max-score` / `--target-score` override it, and `--kind` overrides the grid.
+
+### Reproducibility and level ids
+
+All randomness comes from a **single** `random.Random(seed)`; nothing else
+(time, environment, iteration order) affects the output. Therefore:
+
+- the **same seed + same options** produces an **identical** puzzle, on any run
+  and any machine;
+- changing any option (`--edge`, `--alphabet`, `--difficulty`, `--kind`,
+  `--unique`, `--templates`, target scores, …) yields a different puzzle even
+  with the same seed.
+
+A convenient way to get "infinite" levels is to treat the seed as a level id:
+
+```bash
+# level id L -> seed BASE+L; the same L always gives the same puzzle
+hexregex gen --edge 5 --kind hex --difficulty hard --no-unique \
+    --seed $((1000 + L)) -o "level_$L.json"
+```
+
+`gen-batch` just walks seeds `base, base+1, ...`, and each entry records the
+seed it used under `meta.seed`, so any bank entry can be regenerated exactly
+with `gen --seed <that seed>`.
+
+```bash
+hexregex gen --seed 7 --no-unique -o a.json
+hexregex gen --seed 7 --no-unique -o b.json
+diff a.json b.json        # no output: byte-identical
+```
 
 ### Difficulty
 
