@@ -11,11 +11,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,19 +37,28 @@ import androidx.compose.ui.unit.dp
 fun LevelSelectScreen(
     store: GameStore,
     version: Int,
+    initialDifficulty: Difficulty,
+    onBack: () -> Unit,
     onOpen: (Difficulty, Int) -> Unit,
 ) {
-    var difficulty by remember { mutableStateOf(store.loadPosition()?.difficulty ?: Difficulty.MEDIUM) }
+    var difficulty by remember { mutableStateOf(initialDifficulty) }
     val solved = remember(version, difficulty) { store.solvedLevels(difficulty) }
     val lastId = remember(version) { store.loadPosition() }
-    val lastDifficulty = lastId?.difficulty ?: Difficulty.MEDIUM
+    val lastDifficulty = lastId?.difficulty ?: initialDifficulty
     val lastLevel = lastId?.let { levelOf(it.difficulty, it.seed) }?.takeIf { it >= 0 } ?: 0
     var count by remember { mutableStateOf(100) }
 
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(title = { Text("Regex Crossword") })
+                TopAppBar(
+                    title = { Text("Choose a level") },
+                    navigationIcon = {
+                        TextButton(onClick = onBack) {
+                            Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                        }
+                    },
+                )
                 TabRow(selectedTabIndex = difficulty.ordinal) {
                     for (option in Difficulty.entries) {
                         Tab(

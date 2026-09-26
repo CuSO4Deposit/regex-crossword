@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Hexagon board outline -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,26 L78,40 L78,68 L54,82 L30,68 L30,40 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4" />
+    <!-- X / Y / Z line families -->
+    <path
+        android:pathData="M42,72 L66,36"
+        android:strokeColor="#FF42A5F5"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+    <path
+        android:pathData="M32,54 L76,54"
+        android:strokeColor="#FF66BB6A"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+    <path
+        android:pathData="M42,36 L66,72"
+        android:strokeColor="#FFEF5350"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+</vector>

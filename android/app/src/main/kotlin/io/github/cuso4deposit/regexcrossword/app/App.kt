@@ -8,40 +8,73 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
-/** Two screens: level select, then the puzzle. */
+private sealed interface Screen {
+    data object Home : Screen
+    data object Tutorial : Screen
+    data object License : Screen
+    data object About : Screen
+    data class Levels(val difficulty: Difficulty) : Screen
+    data class Game(val id: PuzzleId) : Screen
+}
+
+/** Home -> levels -> puzzle, plus the How-to-play / License / About pages. */
 @Composable
 fun HexregexApp() {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
-    var open by remember { mutableStateOf<PuzzleId?>(null) }
     var version by remember { mutableStateOf(0) }
+    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
 
-    val current = open
-    if (current == null) {
-        LevelSelectScreen(
-            store = store,
-            version = version,
-            onOpen = { difficulty, level -> open = puzzleIdFor(difficulty, level) },
+    fun goHome() {
+        screen = Screen.Home
+        version++
+    }
+
+    when (val current = screen) {
+        Screen.Home -> HomeScreen(
+            onPlay = { difficulty -> screen = Screen.Levels(difficulty) },
+            onTutorial = { screen = Screen.Tutorial },
+            onLicense = { screen = Screen.License },
+            onAbout = { screen = Screen.About },
         )
-    } else {
-        BackHandler {
-            open = null
-            version++
+
+        Screen.Tutorial -> InfoScreen("How to play", TUTORIAL_TEXT, onBack = { goHome() })
+        Screen.License -> InfoScreen("License", LICENSE_TEXT, onBack = { goHome() })
+        Screen.About -> InfoScreen("About", ABOUT_TEXT, onBack = { goHome() })
+
+        is Screen.Levels -> {
+            BackHandler { goHome() }
+            LevelSelectScreen(
+                store = store,
+                version = version,
+                initialDifficulty = current.difficulty,
+                onBack = { goHome() },
+                onOpen = { difficulty, level ->
+                    screen = Screen.Game(puzzleIdFor(difficulty, level))
+                },
+            )
         }
-        GameScreen(
-            id = current,
-            onBack = {
-                open = null
+
+        is Screen.Game -> {
+            fun backToLevels() {
+                screen = Screen.Levels(current.id.difficulty)
                 version++
-            },
-            onNextLevel = {
-                val level = levelOf(current.difficulty, current.seed).coerceAtLeast(0)
-                open = PuzzleId(
-                    current.version,
-                    current.difficulty,
-                    seedFor(current.difficulty, level + 1),
-                )
-            },
-        )
+            }
+            BackHandler { backToLevels() }
+            GameScreen(
+                id = current.id,
+                onBack = { backToLevels() },
+                onNextLevel = {
+                    val level = levelOf(current.id.difficulty, current.id.seed).coerceAtLeast(0)
+                    screen = Screen.Game(
+                        PuzzleId(
+                            current.id.version,
+                            current.id.difficulty,
+                            seedFor(current.id.difficulty, level + 1),
+                        ),
+                    )
+                },
+            )
+        }
     }
 }

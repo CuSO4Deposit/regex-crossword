@@ -6,3 +6,8 @@ local.properties
 .idea/
 .kotlin/
 captures/
+
+# Secrets — never commit these
+*.jks
+*.keystore
+keystore.properties
