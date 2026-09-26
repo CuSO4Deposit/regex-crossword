@@ -259,7 +259,7 @@ fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
                 notes = notes,
                 selected = selected,
                 result = result,
-                showErrors = showErrors || result.complete,
+                showErrors = showErrors,
                 onCellTap = { selected = it },
                 modifier = Modifier
                     .weight(1f)
