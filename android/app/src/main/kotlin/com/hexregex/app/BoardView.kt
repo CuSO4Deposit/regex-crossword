@@ -55,6 +55,7 @@ fun BoardView(
     val wrongCells: Set<Cell> =
         if (showErrors) {
             result.failures
+                .filter { it.complete }
                 .flatMap { failure -> geometry.line(failure.family, failure.index).cells }
                 .toSet()
         } else {
@@ -67,11 +68,11 @@ fun BoardView(
         yTint = FamilyColors.tint("y"),
         zTint = FamilyColors.tint("z"),
         selected = scheme.primary,
-        wrong = scheme.errorContainer,
+        wrong = scheme.error,
         border = scheme.outline,
         letter = scheme.onSurface,
         selectedLetter = scheme.onPrimary,
-        wrongLetter = scheme.onErrorContainer,
+        wrongLetter = scheme.error,
         note = scheme.onSurfaceVariant,
     )
 
@@ -100,7 +101,6 @@ fun BoardView(
             for (cell in geometry.cells()) {
                 val fill = when {
                     cell == selected -> colors.selected
-                    cell in wrongCells -> colors.wrong
                     cell in (activeByFamily["x"] ?: emptyCells) -> colors.xTint
                     cell in (activeByFamily["y"] ?: emptyCells) -> colors.yTint
                     cell in (activeByFamily["z"] ?: emptyCells) -> colors.zTint
@@ -113,6 +113,9 @@ fun BoardView(
                 path.close()
                 drawPath(path, color = fill, style = Fill)
                 drawPath(path, color = colors.border, style = Stroke(width = 1.dp.toPx()))
+                if (cell in wrongCells) {
+                    drawPath(path, color = colors.wrong, style = Stroke(width = 3.dp.toPx()))
+                }
 
                 val letter = grid[cell]
                 val center = layout.centers.getValue(cell)
@@ -163,6 +166,23 @@ fun BoardView(
                             )
                         }
                     }
+                }
+            }
+
+            // Ring the reading-start cell of each active line.
+            if (selected != null) {
+                for (line in geometry.linesForCell(selected)) {
+                    val start = line.cells.firstOrNull() ?: continue
+                    val marker = Path()
+                    layout.polygon(start).forEachIndexed { index, point ->
+                        if (index == 0) marker.moveTo(point.x, point.y) else marker.lineTo(point.x, point.y)
+                    }
+                    marker.close()
+                    drawPath(
+                        marker,
+                        color = FamilyColors.label(line.family),
+                        style = Stroke(width = 3.dp.toPx()),
+                    )
                 }
             }
         }

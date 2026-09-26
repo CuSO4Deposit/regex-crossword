@@ -28,11 +28,14 @@ android/
     src/main/.../Generator.kt  constructive generator (byte-identical to CLI)
     src/test/...               JUnit 5 acceptance tests
   app/                         Compose UI
-    src/main/.../GameScreen.kt board + clue panel + difficulty tabs
-    src/main/.../BoardView.kt  Canvas rendering
+    src/main/.../App.kt         level-select <-> puzzle navigation
+    src/main/.../LevelSelectScreen.kt difficulty tabs + level grid + solved ticks
+    src/main/.../GameScreen.kt  board, clue panel, hint/solve, check
+    src/main/.../BoardView.kt   Canvas rendering (family colours, start rings)
     src/main/.../BoardLayout.kt honeycomb / grid layout + hit testing
     src/main/.../LetterPalette.kt on-screen letter keyboard
-    src/main/.../GameStore.kt  SharedPreferences save/restore of progress
+    src/main/.../FamilyColors.kt X/Y/Z colours
+    src/main/.../GameStore.kt   SharedPreferences progress + solved levels
 ```
 
 The engine is deliberately a plain JVM module so it can be unit-tested without
@@ -128,14 +131,24 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 
 ## Next steps
 
+The app opens on a **level select** screen (difficulty tabs, an infinite level
+grid, ticks on solved levels) and only enters the puzzle after a level is
+chosen. Each line family is colour-coded (X blue / Y green / Z red) in both
+the clue panel and the board, with an arrow for the reading direction and a
+ring on the cell where reading starts. Completion status and the winning grid
+are stored per level, so a solved level can be reopened or its solution
+reloaded from the overflow menu. Pressing Check only outlines
+complete-but-wrong lines in red, so the family colours always stay visible.
+
 The solver (`regex_engine.py` + `solver.py`) is already ported and used for
 hints, progress (grid + notes + selection) is written to disk on **every
 change** with a synchronous commit plus an `ON_STOP` flush, there is a
 notes/candidate mode, and the constructive generator (`_generate_constructive`
 and CPython `random.Random`) is ported and byte-identical to the CLI. The app
-drives `level_id -> seed = 1000 + level_id -> Generator` with a level
-navigator and background prefetch, so levels are infinite and shareable.
+drives `level_id -> seed = 1000 + level_id -> Generator` with background
+prefetch, so levels are infinite and shareable.
 
 1. Share by level id / daily challenge; per-line live feedback while typing.
 2. Move heavy solving (Hint/Solve) off the main thread.
-3. Optional: candidate auto-pruning from solver domains, progress export.
+3. Optional: per-difficulty level counters, candidate auto-pruning from solver
+   domains, progress export.

@@ -56,6 +56,37 @@ class GameStore(context: Context) {
 
     private fun suffix(difficulty: Difficulty, level: Int) = "${difficulty.name}_$level"
 
+    /** Mark a level solved and remember the grid that solved it. */
+    fun markSolved(difficulty: Difficulty, level: Int, grid: Map<Cell, Char>) {
+        prefs.edit()
+            .putBoolean(solvedKey(difficulty, level), true)
+            .putString(solutionKey(difficulty, level), encodeGrid(grid))
+            .commit()
+    }
+
+    fun isSolved(difficulty: Difficulty, level: Int): Boolean =
+        prefs.getBoolean(solvedKey(difficulty, level), false)
+
+    /** The stored winning grid for a solved level, if any. */
+    fun solvedGrid(difficulty: Difficulty, level: Int): Map<Cell, Char>? =
+        prefs.getString(solutionKey(difficulty, level), null)?.let { decodeGrid(it) }
+
+    /** Level ids (0-based) marked solved for a difficulty. */
+    fun solvedLevels(difficulty: Difficulty): Set<Int> {
+        val prefix = "solved_${difficulty.name}_"
+        val out = HashSet<Int>()
+        for (key in prefs.all.keys) {
+            if (key.startsWith(prefix)) {
+                key.removePrefix(prefix).toIntOrNull()?.let { out.add(it) }
+            }
+        }
+        return out
+    }
+
+    private fun solvedKey(difficulty: Difficulty, level: Int) = "solved_${suffix(difficulty, level)}"
+
+    private fun solutionKey(difficulty: Difficulty, level: Int) = "solution_${suffix(difficulty, level)}"
+
     private fun gridKey(difficulty: Difficulty, level: Int) = "grid_${suffix(difficulty, level)}"
 
     private fun notesKey(difficulty: Difficulty, level: Int) = "notes_${suffix(difficulty, level)}"

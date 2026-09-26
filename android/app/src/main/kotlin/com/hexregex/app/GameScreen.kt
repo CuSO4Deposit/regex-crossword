@@ -22,8 +22,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -73,13 +70,18 @@ private fun generatePuzzle(difficulty: Difficulty, level: Int): Puzzle =
         GenConfig(edge = 5, difficulty = difficulty.tier, seed = SEED_BASE + level),
     )
 
+/** Reading-direction arrow; hex X reads bottom-to-top, rect X top-to-bottom. */
+private fun directionSymbol(kind: String, family: String): String = when (family) {
+    "y" -> "\u2192"
+    "x" -> if (kind == "rect") "\u2193" else "\u2191"
+    else -> "\u2193"
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun GameScreen() {
+fun GameScreen(difficulty: Difficulty, level: Int, onBack: () -> Unit) {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
-    var difficulty by remember { mutableStateOf(store.loadDifficulty(Difficulty.MEDIUM)) }
-    var level by remember { mutableStateOf(store.loadLevel()) }
 
     val cache = remember { HashMap<String, Puzzle>() }
     val cacheOrder = remember { ArrayDeque<String>() }
@@ -88,41 +90,41 @@ fun GameScreen() {
         while (cacheOrder.size > 64) cache.remove(cacheOrder.removeFirst())
     }
 
-    val puzzle = remember(difficulty, level) {
-        val key = "${difficulty.name}/$level"
+    val key = "${difficulty.name}/$level"
+    val puzzle = remember(key) {
         cache[key] ?: generatePuzzle(difficulty, level).also { cachePut(key, it) }
     }
     val solver = remember(puzzle) { Solver(puzzle) }
-    val saved = remember(difficulty, level) { store.load(difficulty, level) }
+    val saved = remember(key) { store.load(difficulty, level) }
     val validCells = remember(puzzle) { puzzle.geometry.cells().toHashSet() }
-    val grid = remember(difficulty, level) {
+    val grid = remember(key) {
         mutableStateMapOf<Cell, Char>().apply {
             putAll(saved.grid.filterKeys { it in validCells })
         }
     }
-    val notes = remember(difficulty, level) {
+    val notes = remember(key) {
         mutableStateMapOf<Cell, Set<Char>>().apply {
             putAll(saved.notes.filterKeys { it in validCells })
         }
     }
-    var selected by remember(difficulty, level) {
+    var selected by remember(key) {
         mutableStateOf(saved.selected?.takeIf { it in validCells })
     }
-    var notesMode by remember(difficulty, level) { mutableStateOf(false) }
-    var showErrors by remember(difficulty, level) { mutableStateOf(false) }
-    var message by remember(difficulty, level) { mutableStateOf<String?>(null) }
+    var notesMode by remember(key) { mutableStateOf(false) }
+    var showErrors by remember(key) { mutableStateOf(false) }
+    var message by remember(key) { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmSolve by remember { mutableStateOf(false) }
+    var solvedNow by remember(key) { mutableStateOf(store.isSolved(difficulty, level)) }
 
-    // Prefetch the next few levels off the main thread.
     LaunchedEffect(difficulty, level) {
         for (offset in 1..3) {
-            val key = "${difficulty.name}/${level + offset}"
-            if (!cache.containsKey(key)) {
+            val nextKey = "${difficulty.name}/${level + offset}"
+            if (!cache.containsKey(nextKey)) {
                 val generated = withContext(Dispatchers.Default) {
                     generatePuzzle(difficulty, level + offset)
                 }
-                cachePut(key, generated)
+                cachePut(nextKey, generated)
             }
         }
     }
@@ -138,6 +140,12 @@ fun GameScreen() {
 
     val result: JudgeResult by remember(puzzle) {
         derivedStateOf { Judge.judge(puzzle, grid) }
+    }
+    LaunchedEffect(result.solved) {
+        if (result.solved) {
+            store.markSolved(difficulty, level, grid.toMap())
+            solvedNow = true
+        }
     }
     val alphabet = remember { ('A'..'Z').toList() }
 
@@ -164,6 +172,7 @@ fun GameScreen() {
         grid[target] = completion.getValue(target)
         notes.remove(target)
         selected = target
+        showErrors = false
         message = "Hint: revealed one cell consistent with your grid."
     }
 
@@ -182,58 +191,59 @@ fun GameScreen() {
         grid.putAll(completion)
         notes.clear()
         selected = null
+        showErrors = false
         message = "Filled one valid solution."
+    }
+
+    fun loadSavedSolution() {
+        val stored = store.solvedGrid(difficulty, level)
+        if (stored == null) {
+            message = "No saved solution for this level."
+            return
+        }
+        grid.clear()
+        grid.putAll(stored.filterKeys { it in validCells })
+        notes.clear()
+        selected = null
+        showErrors = false
+        message = "Loaded the saved solution."
     }
 
     Scaffold(
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text("Regex Crossword") },
-                    actions = {
-                        Box {
-                            TextButton(onClick = { menuOpen = true }) {
-                                Text("\u22EE", style = MaterialTheme.typography.titleLarge)
-                            }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            TopAppBar(
+                title = { Text("${difficulty.label} \u00B7 Level ${level + 1}") },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+                actions = {
+                    Box {
+                        TextButton(onClick = { menuOpen = true }) {
+                            Text("\u22EE", style = MaterialTheme.typography.titleLarge)
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Solve (fill a solution)") },
+                                onClick = {
+                                    menuOpen = false
+                                    confirmSolve = true
+                                },
+                            )
+                            if (solvedNow) {
                                 DropdownMenuItem(
-                                    text = { Text("Solve (fill a solution)") },
+                                    text = { Text("Load saved solution") },
                                     onClick = {
                                         menuOpen = false
-                                        confirmSolve = true
+                                        loadSavedSolution()
                                     },
                                 )
                             }
                         }
-                    },
-                )
-                TabRow(selectedTabIndex = difficulty.ordinal) {
-                    for (option in Difficulty.entries) {
-                        Tab(
-                            selected = option == difficulty,
-                            onClick = { difficulty = option },
-                            text = { Text(option.label) },
-                        )
                     }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = { if (level > 0) level-- }, enabled = level > 0) {
-                        Text("\u25C0")
-                    }
-                    Text(
-                        text = "Level ${level + 1}",
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    TextButton(onClick = { level++ }) { Text("\u25B6") }
-                }
-            }
+                },
+            )
         },
     ) { innerPadding ->
         Column(
@@ -331,9 +341,10 @@ fun GameScreen() {
 
 @Composable
 private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
+    val kind = puzzle.geometry.kind
     if (selected == null) {
         Text(
-            text = "Tap a cell to see the three clues through it.",
+            text = "Tap a cell to see its three clues and their reading directions.",
             style = MaterialTheme.typography.bodyMedium,
         )
         return
@@ -366,7 +377,14 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = directionSymbol(kind, line.family),
+                    color = FamilyColors.label(line.family),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(Modifier.width(4.dp))
                 Text(
                     text = clue,
                     style = MaterialTheme.typography.bodyMedium,
@@ -377,6 +395,11 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                 )
             }
         }
+        Text(
+            text = "Ringed cell = start of the line (X reads bottom\u2192top).",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
