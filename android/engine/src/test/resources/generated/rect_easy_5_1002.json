@@ -1,0 +1,58 @@
+{
+  "kind": "rect",
+  "author": "generated",
+  "name": "generated",
+  "solution": [
+    [
+      "Q",
+      "T",
+      "N",
+      "H",
+      "E"
+    ],
+    [
+      "E",
+      "I",
+      "P",
+      "E",
+      "U"
+    ],
+    [
+      "S",
+      "T",
+      "C",
+      "W",
+      "N"
+    ],
+    [
+      "Q",
+      "B",
+      "H",
+      "H",
+      "Z"
+    ],
+    [
+      "B",
+      "N",
+      "A",
+      "S",
+      "R"
+    ]
+  ],
+  "rows": 5,
+  "cols": 5,
+  "x": [
+    "QE.Q.",
+    "(?:TIT|BN)*",
+    "[^D]P.[AHX]A",
+    "[^D]E[MUW]HS",
+    "EU[INZ].."
+  ],
+  "y": [
+    "QTNHE",
+    "[^L]*I[^L]*",
+    "STCWN",
+    "QBHH.",
+    "BNASR"
+  ]
+}

@@ -24,6 +24,8 @@ android/
     src/main/.../Judge.kt      fullmatch line judging
     src/main/.../RegexEngine.kt regex parser + domain-aware feasibility matcher
     src/main/.../Solver.kt     arc-consistency + MRV backtracking (hints)
+    src/main/.../PyRandom.kt   exact port of CPython random.Random (MT19937)
+    src/main/.../Generator.kt  constructive generator (byte-identical to CLI)
     src/test/...               JUnit 5 acceptance tests
   app/                         Compose UI
     src/main/.../GameScreen.kt board + clue panel + difficulty tabs
@@ -87,7 +89,7 @@ Only the cross-platform regex subset the generator emits is used: literals,
 
 ## Acceptance tests (all passing)
 
-`./gradlew -p engine test` covers 27 tests, in particular:
+`./gradlew -p engine test` covers 30 tests, in particular:
 
 - **CLI byte parity of the serialiser** — each fixture parsed and re-serialised
   by `PyJson` equals the CLI output byte for byte.
@@ -105,6 +107,9 @@ Only the cross-platform regex subset the generator emits is used: literals,
 - **Solver** — a port of `solver.py` solves every fixture from scratch, respects
   consistent fixed letters, and detects unsatisfiable fixed letters, with every
   reported solution re-checked by whole-string matching.
+- **Generator byte parity** — `PyRandom` matches CPython vectors, and
+  `Generator.constructive` reproduces `hexregex gen --difficulty {easy,medium,hard}
+--edge 5 --seed N --no-unique` byte for byte for nine seeds.
 
 The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 
@@ -125,15 +130,12 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 
 The solver (`regex_engine.py` + `solver.py`) is already ported and used for
 hints, progress (grid + notes + selection) is written to disk on **every
-change** with a synchronous commit plus an `ON_STOP` flush, and there is a
-notes/candidate mode, so the app never needs the stored solution.
+change** with a synchronous commit plus an `ON_STOP` flush, there is a
+notes/candidate mode, and the constructive generator (`_generate_constructive`
 
-1. **Port the constructive generator** (`hexregex/generator.py`,
-   `_generate_constructive`) together with CPython's `random.Random` (MT19937 +
-   `_randbelow`/`choice`/`sample`/`shuffle`/`choices`) so `level_id -> seed ->
-puzzle` is byte-identical to `hexregex gen`. Wire `Difficulty` to
-   `SEED_BASE + level`.
-2. Level pipeline: level navigator, prefetch `L+1..L+3` on a background thread,
-   cache generated JSON.
-3. Per-line live feedback while typing, daily challenge / share by level id.
-4. Move puzzle generation and heavy solving off the main thread.
+- CPython `random.Random`) is ported and byte-identical to the CLI.
+
+1. Level pipeline: drive `level_id -> seed = 1000 + level_id -> Generator`,
+   add a level navigator, prefetch `L+1..L+3` on a background thread, cache.
+2. Per-line live feedback while typing, daily challenge / share by level id.
+3. Move generation and heavy solving off the main thread.

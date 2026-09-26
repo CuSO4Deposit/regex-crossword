@@ -1,0 +1,58 @@
+{
+  "kind": "rect",
+  "author": "generated",
+  "name": "generated",
+  "solution": [
+    [
+      "Z",
+      "B",
+      "Y",
+      "Y",
+      "G"
+    ],
+    [
+      "C",
+      "R",
+      "M",
+      "Z",
+      "F"
+    ],
+    [
+      "N",
+      "X",
+      "L",
+      "S",
+      "U"
+    ],
+    [
+      "Y",
+      "M",
+      "Y",
+      "S",
+      "G"
+    ],
+    [
+      "T",
+      "B",
+      "A",
+      "X",
+      "W"
+    ]
+  ],
+  "rows": 5,
+  "cols": 5,
+  "x": [
+    "ZC..T",
+    "BRXM.",
+    "YMLYA",
+    "YZSSX",
+    "GFUGW"
+  ],
+  "y": [
+    ".B.Y.",
+    "C.M.F",
+    ".X.SU",
+    "Y.Y[DSX].",
+    "TB.X."
+  ]
+}
