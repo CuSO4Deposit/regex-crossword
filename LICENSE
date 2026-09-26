@@ -22,7 +22,6 @@ SOFTWARE.
 
 ---
 
-The Android app is a port of "hexregex", a solver and generator for regular
-crosswords by cuso4deposit (also MIT). The hexagonal "A Regular Crossword" form
-was popularised by Dan Gulotta's puzzle in MIT Mystery Hunt 2013; no original
-puzzle text from that hunt is included here.
+The hexagonal "A Regular Crossword" form was popularised by Dan Gulotta's
+puzzle in MIT Mystery Hunt 2013. This project does not include the original
+puzzle or its text.

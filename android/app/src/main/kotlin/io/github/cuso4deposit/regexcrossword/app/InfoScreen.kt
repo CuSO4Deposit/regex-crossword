@@ -1,7 +1,10 @@
 package io.github.cuso4deposit.regexcrossword.app
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,11 +16,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InfoScreen(title: String, body: String, onBack: () -> Unit) {
+fun InfoScreen(title: String, body: String, onBack: () -> Unit, link: String? = null) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -38,6 +42,16 @@ fun InfoScreen(title: String, body: String, onBack: () -> Unit) {
                 .padding(16.dp),
         ) {
             Text(text = body, style = MaterialTheme.typography.bodyMedium)
+            if (link != null) {
+                val uriHandler = LocalUriHandler.current
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = link,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.clickable { uriHandler.openUri(link) },
+                )
+            }
         }
     }
 }
@@ -106,9 +120,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This app is a port of "hexregex", a solver and generator for regular
-crosswords (also MIT). The hexagonal "A Regular Crossword" form was
-popularised by Dan Gulotta's puzzle in MIT Mystery Hunt 2013.
+This app is made by CuSO4Deposit. The hexagonal "A Regular Crossword" form was
+popularised by Dan Gulotta's puzzle in MIT Mystery Hunt 2013. This app does not
+include the original puzzle or its text.
 """
 
 const val ABOUT_TEXT: String = """
@@ -117,11 +131,14 @@ About
 
 Regex Crossword 0.1.0
 
-A phone port of the hexregex solver + generator. Levels are generated on
-device from a seed; hard levels are pre-generated with the solver to
-guarantee a unique solution.
+Made by CuSO4Deposit.
+
+Levels are generated on device from a seed; hard levels are pre-generated
+with the solver to guarantee a unique solution.
 
 No accounts, no ads, no network access, no permissions.
 
 Built with Kotlin and Jetpack Compose.
+
+GitHub:
 """
