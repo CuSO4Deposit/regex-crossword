@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hexregex"
+version = "0.5.0"
+description = "Solver and generator for hexagonal regular crosswords"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+hexregex = "hexregex.cli:main"
+
+[tool.setuptools]
+packages = ["hexregex"]
