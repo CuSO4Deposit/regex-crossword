@@ -18,14 +18,24 @@ import io.github.cuso4deposit.regexcrossword.engine.Puzzle
  * Bump it on *any* change to the generator algorithm, the pinned presets, or
  * the seed bases.
  */
-const val GENERATOR_VERSION = 1
+const val GENERATOR_VERSION = 2
 
 data class PuzzleId(val version: Int, val difficulty: Difficulty, val seed: Int)
 
-enum class Difficulty(val label: String, val tier: String, val seedBase: Int) {
-    EASY("Easy", "easy", 1_000_000),
-    MEDIUM("Medium", "medium", 2_000_000),
-    HARD("Hard", "hard", 3_000_000),
+/**
+ * Pinned presets. `targetScore` drives the clue opacity (higher = fewer
+ * literals = fewer directly-fillable cells). medium is the old "hard"
+ * (target ≈ 73); hard is looser (target ≈ 85, ~15% literal tokens).
+ */
+enum class Difficulty(
+    val label: String,
+    val tier: String,
+    val seedBase: Int,
+    val targetScore: Double?,
+) {
+    EASY("Easy", "easy", 1_000_000, null),
+    MEDIUM("Medium", "medium", 2_000_000, 73.0),
+    HARD("Hard", "hard", 3_000_000, 85.0),
 }
 
 /** The versioned level -> seed bijection for one difficulty. */
@@ -45,6 +55,11 @@ fun generatePuzzle(id: PuzzleId): Puzzle {
         "cannot generate a level from generator version ${id.version}"
     }
     return Generator.constructive(
-        GenConfig(edge = 5, difficulty = id.difficulty.tier, seed = id.seed),
+        GenConfig(
+            edge = 5,
+            difficulty = id.difficulty.tier,
+            seed = id.seed,
+            targetScore = id.difficulty.targetScore,
+        ),
     )
 }

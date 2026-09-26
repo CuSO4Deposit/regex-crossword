@@ -64,7 +64,7 @@ private fun directionSymbol(kind: String, family: String): String = when (family
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun GameScreen(id: PuzzleId, onBack: () -> Unit) {
+fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
     val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
@@ -103,6 +103,8 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit) {
     var confirmSolve by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
+    var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
+    var showSolved by remember(key) { mutableStateOf(false) }
 
     LaunchedEffect(id) {
         for (offset in 1..3) {
@@ -131,6 +133,10 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit) {
         if (result.solved) {
             store.markSolved(id, grid.toMap())
             solvedNow = true
+            if (!solvedNotified) {
+                solvedNotified = true
+                showSolved = true
+            }
         }
     }
     val alphabet = remember { ('A'..'Z').toList() }
@@ -344,6 +350,30 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (showSolved) {
+        AlertDialog(
+            onDismissRequest = { showSolved = false },
+            title = { Text("Solved!") },
+            text = { Text("Every line matches. Well done.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSolved = false
+                        onNextLevel()
+                    },
+                ) { Text("Next level") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showSolved = false
+                        onBack()
+                    },
+                ) { Text("Back to levels") }
             },
         )
     }

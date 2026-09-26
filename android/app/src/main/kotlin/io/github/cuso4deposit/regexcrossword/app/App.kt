@@ -34,6 +34,14 @@ fun HexregexApp() {
                 open = null
                 version++
             },
+            onNextLevel = {
+                val level = levelOf(current.difficulty, current.seed).coerceAtLeast(0)
+                open = PuzzleId(
+                    current.version,
+                    current.difficulty,
+                    seedFor(current.difficulty, level + 1),
+                )
+            },
         )
     }
 }

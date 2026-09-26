@@ -60,18 +60,22 @@ A level id is reproducible only if its generation parameters are frozen. These
 are the pinned presets (full CLI default alphabet `A–Z`, constructive mode so no
 solver is needed):
 
-| difficulty | kind / size | seed            | Command                                                                       |
-| ---------- | ----------- | --------------- | ----------------------------------------------------------------------------- |
-| easy       | rect, 5×5   | `1_000_000 + L` | `hexregex gen --edge 5 --difficulty easy   --seed $((1000000+L)) --no-unique` |
-| medium     | hex, edge 5 | `2_000_000 + L` | `hexregex gen --edge 5 --difficulty medium --seed $((2000000+L)) --no-unique` |
-| hard       | hex, edge 5 | `3_000_000 + L` | `hexregex gen --edge 5 --difficulty hard   --seed $((3000000+L)) --no-unique` |
+| difficulty | kind / size | seed            | target | Command                                                                                         |
+| ---------- | ----------- | --------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| easy       | rect, 5×5   | `1_000_000 + L` | (band) | `hexregex gen --edge 5 --difficulty easy   --seed $((1000000+L)) --no-unique`                   |
+| medium     | hex, edge 5 | `2_000_000 + L` | `73`   | `hexregex gen --edge 5 --difficulty medium --seed $((2000000+L)) --target-score 73 --no-unique` |
+| hard       | hex, edge 5 | `3_000_000 + L` | `85`   | `hexregex gen --edge 5 --difficulty hard   --seed $((3000000+L)) --target-score 85 --no-unique` |
+
+`--target-score` drives clue opacity: higher = fewer literal tokens = fewer
+cells readable straight off. medium is the old "hard" (≈37% literals); hard is
+much looser (≈15% literals), closer to the MIT original in feel.
 
 Each difficulty gets its own seed space: with a shared seed, medium and hard
 (identical geometry) would produce the _same truth grid_ for the same level,
 i.e. the same answer. Level id `L` is 0-based (`L = 0` is "Level 1"). Changing
-any of `edge`, `kind`, `alphabet`, `difficulty`, `--unique` or `--no-unique`
-changes the puzzle for the same seed, so these must stay in lockstep with the
-generator port.
+any of `edge`, `kind`, `alphabet`, `difficulty`, `target-score`, `--unique` or
+`--no-unique` changes the puzzle for the same seed, so these must stay in
+lockstep with the generator port.
 
 **Puzzle identity vs level number.** A puzzle is identified by
 `(GENERATOR_VERSION, seed)`; the level number is only this version's

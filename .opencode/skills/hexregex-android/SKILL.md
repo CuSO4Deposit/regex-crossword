@@ -19,16 +19,18 @@ explicitly changes them.
 - **Graphical honeycomb board**, tap-a-cell + on-screen A–Z palette.
 - **Pinned presets** (never change these or level ids change):
 
-  | difficulty | kind / size | seed                   |
-  | ---------- | ----------- | ---------------------- |
-  | easy       | rect 5×5    | `1_000_000 + level_id` |
-  | medium     | hex edge 5  | `2_000_000 + level_id` |
-  | hard       | hex edge 5  | `3_000_000 + level_id` |
+  | difficulty | kind / size | seed                   | target score |
+  | ---------- | ----------- | ---------------------- | ------------ |
+  | easy       | rect 5×5    | `1_000_000 + level_id` | (band)       |
+  | medium     | hex edge 5  | `2_000_000 + level_id` | `73`         |
+  | hard       | hex edge 5  | `3_000_000 + level_id` | `85`         |
 
   Each difficulty has its own seed space on purpose: medium and hard share a
   geometry, so a shared seed would give the same truth grid (same answer).
-  Full default alphabet `A–Z`, always `--no-unique`, CLI command is
-  `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L)) --no-unique`.
+  `--target-score` sets clue opacity (higher = fewer literals = fewer cells you
+  can read off). Full default alphabet `A–Z`, always `--no-unique`, CLI command
+  is `hexregex gen --edge 5 --difficulty <tier> --seed $((<base>+L))
+[--target-score <t>] --no-unique`.
 
 - **Identity, not level number.** A puzzle is `(GENERATOR_VERSION, seed)`; the
   level number is just this version's level↔seed bijection. Progress is keyed

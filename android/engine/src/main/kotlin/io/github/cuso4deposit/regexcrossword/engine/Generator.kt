@@ -37,6 +37,8 @@ data class GenConfig(
     val alphabet: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     val maxChunkAlts: Int = 2,
     val maxLiteralFraction: Double? = null,
+    //: aim for this score (overrides the difficulty band default)
+    val targetScore: Double? = null,
     val requireAllRelaxed: Boolean = true,
     val maxAttempts: Int = 8,
     val author: String = "generated",
@@ -69,7 +71,7 @@ object Generator {
         geo.validate()
         val families = geo.families
 
-        val target = when (cfg.difficulty) {
+        val target = cfg.targetScore ?: when (cfg.difficulty) {
             "hard" -> 70.0 + 0.1 * (100.0 - 70.0)
             "medium" -> 55.0 + 0.5 * (70.0 - 55.0)
             else -> 0.6 * 55.0
