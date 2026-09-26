@@ -3,6 +3,8 @@ package com.hexregex.app
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +17,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -32,6 +33,8 @@ import com.hexregex.engine.Cell
 import com.hexregex.engine.Judge
 import com.hexregex.engine.JudgeResult
 import com.hexregex.engine.Puzzle
+import com.hexregex.engine.Solver
+import com.hexregex.engine.SolverLimitException
 
 /** Built-in fixtures, one per pinned difficulty preset (seed 1000). */
 enum class Difficulty(val label: String, val asset: String) {
@@ -43,20 +46,64 @@ enum class Difficulty(val label: String, val asset: String) {
 private fun loadPuzzle(context: Context, difficulty: Difficulty): Puzzle =
     context.assets.open(difficulty.asset).bufferedReader().use { Puzzle.fromJson(it.readText()) }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GameScreen() {
     val context = LocalContext.current
     var difficulty by remember { mutableStateOf(Difficulty.MEDIUM) }
     val puzzle = remember(difficulty) { loadPuzzle(context, difficulty) }
+    val solver = remember(puzzle) { Solver(puzzle) }
     val grid = remember(difficulty) { mutableStateMapOf<Cell, Char>() }
     var selected by remember(difficulty) { mutableStateOf<Cell?>(null) }
     var showErrors by remember(difficulty) { mutableStateOf(false) }
+    var message by remember(difficulty) { mutableStateOf<String?>(null) }
 
     val result: JudgeResult by remember(puzzle) {
         derivedStateOf { Judge.judge(puzzle, grid) }
     }
     val alphabet = remember { ('A'..'Z').toList() }
+
+    fun firstEmpty(): Cell? =
+        selected?.takeIf { grid[it] == null }
+            ?: puzzle.geometry.cells().firstOrNull { grid[it] == null }
+
+    fun hint() {
+        val target = firstEmpty()
+        if (target == null) {
+            message = "Every cell is filled."
+            return
+        }
+        val completion = try {
+            solver.solveWith(grid.toMap())
+        } catch (_: SolverLimitException) {
+            message = "Solver gave up on this clue set."
+            return
+        }
+        if (completion == null) {
+            message = "Your entries are inconsistent \u2014 no completion exists."
+            return
+        }
+        grid[target] = completion.getValue(target)
+        selected = target
+        message = "Hint: revealed one cell consistent with your grid."
+    }
+
+    fun solveAll() {
+        val completion = try {
+            solver.solveWith(grid.toMap())
+        } catch (_: SolverLimitException) {
+            message = "Solver gave up on this clue set."
+            return
+        }
+        if (completion == null) {
+            message = "Your entries are inconsistent \u2014 clear or fix them first."
+            return
+        }
+        grid.clear()
+        grid.putAll(completion)
+        selected = null
+        message = "Filled one valid solution."
+    }
 
     Scaffold(
         topBar = {
@@ -92,43 +139,40 @@ fun GameScreen() {
                     .weight(1f)
                     .fillMaxWidth(),
             )
-            StatusLine(result, showErrors)
+            StatusLine(result, showErrors, message)
             LetterPalette(
                 alphabet = alphabet,
                 onLetter = { letter ->
                     selected?.let {
                         grid[it] = letter
                         showErrors = false
+                        message = null
                     }
                 },
                 onClear = {
                     selected?.let {
                         grid.remove(it)
                         showErrors = false
+                        message = null
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Button(onClick = { showErrors = true }) { Text("Check") }
+                OutlinedButton(onClick = { hint() }) { Text("Hint") }
                 OutlinedButton(
                     onClick = {
                         grid.clear()
                         selected = null
                         showErrors = false
+                        message = null
                     },
                 ) { Text("Clear") }
-                TextButton(
-                    onClick = {
-                        grid.clear()
-                        grid.putAll(puzzle.storedSolutionGrid())
-                        selected = null
-                        showErrors = false
-                    },
-                ) { Text("Fill solution") }
+                OutlinedButton(onClick = { solveAll() }) { Text("Solve") }
             }
         }
     }
@@ -176,8 +220,9 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
 }
 
 @Composable
-private fun StatusLine(result: JudgeResult, showErrors: Boolean) {
+private fun StatusLine(result: JudgeResult, showErrors: Boolean, message: String?) {
     val text = when {
+        message != null -> message
         result.solved -> "Solved! Every line matches."
         showErrors && result.complete -> "${result.failures.size} line(s) do not match."
         showErrors -> "Some cells are still empty."
