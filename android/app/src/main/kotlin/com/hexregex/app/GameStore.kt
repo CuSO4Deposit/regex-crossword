@@ -4,10 +4,11 @@ import android.content.Context
 import com.hexregex.engine.Cell
 
 /**
- * Persists the in-progress grid and selection per difficulty.
+ * Persists progress keyed by (difficulty, level), plus the last position.
  *
- * Deliberately tiny: a SharedPreferences file with one record per difficulty,
- * so quitting and relaunching resumes exactly where the player left off.
+ * Levels are infinite (`seed = SEED_BASE + level_id`), so each level gets its
+ * own record. Every change is written with a synchronous `commit()` so an
+ * accidental crash cannot lose the player's work.
  */
 class GameStore(context: Context) {
     private val prefs = context.getSharedPreferences("hexregex", Context.MODE_PRIVATE)
@@ -23,35 +24,43 @@ class GameStore(context: Context) {
         return Difficulty.entries.firstOrNull { it.name == name } ?: fallback
     }
 
-    fun saveDifficulty(difficulty: Difficulty) {
-        prefs.edit().putString(KEY_DIFFICULTY, difficulty.name).apply()
+    fun loadLevel(): Int = prefs.getInt(KEY_LEVEL, 0)
+
+    fun savePosition(difficulty: Difficulty, level: Int) {
+        prefs.edit()
+            .putString(KEY_DIFFICULTY, difficulty.name)
+            .putInt(KEY_LEVEL, level)
+            .commit()
     }
 
-    fun load(difficulty: Difficulty): SavedState {
-        val grid = decodeGrid(prefs.getString(gridKey(difficulty), null))
-        val notes = decodeNotes(prefs.getString(notesKey(difficulty), null))
-        val selected = decodeCell(prefs.getString(selectedKey(difficulty), null))
+    fun load(difficulty: Difficulty, level: Int): SavedState {
+        val grid = decodeGrid(prefs.getString(gridKey(difficulty, level), null))
+        val notes = decodeNotes(prefs.getString(notesKey(difficulty, level), null))
+        val selected = decodeCell(prefs.getString(selectedKey(difficulty, level), null))
         return SavedState(grid, notes, selected)
     }
 
     fun save(
         difficulty: Difficulty,
+        level: Int,
         grid: Map<Cell, Char>,
         notes: Map<Cell, Set<Char>>,
         selected: Cell?,
     ) {
-        // commit() writes synchronously so a change survives an immediate
-        // crash or process kill; callers run it off the main thread.
         prefs.edit()
-            .putString(gridKey(difficulty), encodeGrid(grid))
-            .putString(notesKey(difficulty), encodeNotes(notes))
-            .putString(selectedKey(difficulty), selected?.let { encodeCell(it) })
+            .putString(gridKey(difficulty, level), encodeGrid(grid))
+            .putString(notesKey(difficulty, level), encodeNotes(notes))
+            .putString(selectedKey(difficulty, level), selected?.let { encodeCell(it) })
             .commit()
     }
 
-    private fun gridKey(difficulty: Difficulty) = "grid_${difficulty.name}"
-    private fun notesKey(difficulty: Difficulty) = "notes_${difficulty.name}"
-    private fun selectedKey(difficulty: Difficulty) = "selected_${difficulty.name}"
+    private fun suffix(difficulty: Difficulty, level: Int) = "${difficulty.name}_$level"
+
+    private fun gridKey(difficulty: Difficulty, level: Int) = "grid_${suffix(difficulty, level)}"
+
+    private fun notesKey(difficulty: Difficulty, level: Int) = "notes_${suffix(difficulty, level)}"
+
+    private fun selectedKey(difficulty: Difficulty, level: Int) = "selected_${suffix(difficulty, level)}"
 
     private fun encodeGrid(grid: Map<Cell, Char>): String =
         grid.entries.joinToString(";") { "${it.key.r},${it.key.c},${it.value}" }
@@ -101,6 +110,7 @@ class GameStore(context: Context) {
     }
 
     private companion object {
-        const val KEY_DIFFICULTY = "difficulty"
+        const val KEY_DIFFICULTY = "position_difficulty"
+        const val KEY_LEVEL = "position_level"
     }
 }

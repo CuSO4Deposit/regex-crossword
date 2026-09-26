@@ -132,10 +132,10 @@ The solver (`regex_engine.py` + `solver.py`) is already ported and used for
 hints, progress (grid + notes + selection) is written to disk on **every
 change** with a synchronous commit plus an `ON_STOP` flush, there is a
 notes/candidate mode, and the constructive generator (`_generate_constructive`
+and CPython `random.Random`) is ported and byte-identical to the CLI. The app
+drives `level_id -> seed = 1000 + level_id -> Generator` with a level
+navigator and background prefetch, so levels are infinite and shareable.
 
-- CPython `random.Random`) is ported and byte-identical to the CLI.
-
-1. Level pipeline: drive `level_id -> seed = 1000 + level_id -> Generator`,
-   add a level navigator, prefetch `L+1..L+3` on a background thread, cache.
-2. Per-line live feedback while typing, daily challenge / share by level id.
-3. Move generation and heavy solving off the main thread.
+1. Share by level id / daily challenge; per-line live feedback while typing.
+2. Move heavy solving (Hint/Solve) off the main thread.
+3. Optional: candidate auto-pruning from solver domains, progress export.
