@@ -22,6 +22,8 @@ android/
     src/main/.../MiniJson.kt   dependency-free JSON reader
     src/main/.../PyJson.kt     writes bytes exactly like json.dumps(indent=2)
     src/main/.../Judge.kt      fullmatch line judging
+    src/main/.../RegexEngine.kt regex parser + domain-aware feasibility matcher
+    src/main/.../Solver.kt     arc-consistency + MRV backtracking (hints)
     src/test/...               JUnit 5 acceptance tests
   app/                         Compose UI
     src/main/.../GameScreen.kt board + clue panel + difficulty tabs
@@ -84,7 +86,7 @@ Only the cross-platform regex subset the generator emits is used: literals,
 
 ## Acceptance tests (all passing)
 
-`./gradlew -p engine test` covers 16 tests, in particular:
+`./gradlew -p engine test` covers 27 tests, in particular:
 
 - **CLI byte parity of the serialiser** — each fixture parsed and re-serialised
   by `PyJson` equals the CLI output byte for byte.
@@ -96,6 +98,12 @@ Only the cross-platform regex subset the generator emits is used: literals,
   comparison.
 - **Geometry directions** — X bottom-to-top, Z top-to-bottom, Y left-to-right;
   every cell on one line per family.
+- **Regex engine** — `RegexEngine` (a port of `regex_engine.py`) is cross-checked
+  against the platform regex: domain feasibility agrees with `Matcher.matches()`
+  over concrete words and with brute force over domain products.
+- **Solver** — a port of `solver.py` solves every fixture from scratch, respects
+  consistent fixed letters, and detects unsatisfiable fixed letters, with every
+  reported solution re-checked by whole-string matching.
 
 The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 
@@ -113,6 +121,9 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
   Compose BOM and explicit versions).
 
 ## Next steps
+
+The solver (`regex_engine.py` + `solver.py`) is already ported and used for
+hints, so the app never needs the stored solution.
 
 1. **Port the constructive generator** (`hexregex/generator.py`,
    `_generate_constructive`) together with CPython's `random.Random` (MT19937 +
