@@ -26,6 +26,9 @@ class Solver(
     private val clueOf: List<String>
     private val cellLinesMap: Map<Cell, List<Int>>
 
+    /** Static clue-style measurements, used by the difficulty score. */
+    val style: Map<String, Double>
+
     init {
         require(alphabet.isNotEmpty()) { "alphabet must not be empty" }
         val comp = ArrayList<Compiled>()
@@ -43,6 +46,13 @@ class Solver(
         lineCells = cells
         clueOf = clues
         cellLinesMap = map
+        style = clueStyle(
+            buildMap {
+                put("x", puzzle.x)
+                put("y", puzzle.y)
+                if (puzzle.z.isNotEmpty()) put("z", puzzle.z)
+            },
+        )
     }
 
     private var nodes = 0
@@ -162,6 +172,41 @@ class Solver(
     }
 
     fun solveFromScratch(): Map<Cell, Char>? = solveWith(emptyMap())
+
+    /**
+     * Arc consistency only: returns a single solution only when propagation
+     * fully determines the grid (the cheap uniqueness check the generator
+     * uses). Statistics are filled in for the difficulty score.
+     */
+    fun solvePropagationOnly(): Pair<List<Map<Cell, Char>>, SolveStats> {
+        val domains = initialDomains()
+        val stats = SolveStats(edge = geo.numRows, alphabetSize = alphabet.size)
+        val consistent = propagate(domains)
+        val remaining = domains.values.filter { it.size > 1 }
+        stats.solvedByPropagation = consistent && remaining.isEmpty()
+        stats.residualCells = remaining.size
+        stats.residualCandidates = remaining.sumOf { it.size - 1 }
+        stats.maxResidualDomain = remaining.maxOfOrNull { it.size } ?: 0
+        val solutions = ArrayList<Map<Cell, Char>>()
+        if (stats.solvedByPropagation) {
+            val assignment = LinkedHashMap<Cell, Char>()
+            for ((cell, domain) in domains) assignment[cell] = domain.first()
+            verify(assignment)
+            solutions.add(assignment)
+        }
+        measure(stats, style, DEFAULT_WEIGHTS)
+        return solutions to stats
+    }
+
+    /** Enumerate up to [maxSolutions] solutions (for the full uniqueness check). */
+    fun solveAll(maxSolutions: Int): List<Map<Cell, Char>> {
+        val domains = initialDomains()
+        if (!propagate(domains)) return emptyList()
+        val solutions = ArrayList<Map<Cell, Char>>()
+        nodes = 0
+        search(domains, solutions, maxSolutions)
+        return solutions
+    }
 
     /**
      * Letters forced by a *single* line: cells whose feasible letter set over

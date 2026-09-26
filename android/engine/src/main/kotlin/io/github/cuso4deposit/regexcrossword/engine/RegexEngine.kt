@@ -42,7 +42,21 @@ private const val INF_REPEAT = 1 shl 30
 
 object RegexEngine {
     private val compileCache = HashMap<String, Compiled>()
-    private val feasibleCache = HashMap<Pair<String, List<Set<Char>>>, Boolean>()
+
+    // Bounded LRU. Keys are large (a set per position), so the on-device budget
+    // is much smaller than CPython's 1<<16; clearCaches() resets it between
+    // generations.
+    private val feasibleCache =
+        object : java.util.LinkedHashMap<Pair<String, List<Set<Char>>>, Boolean>(512, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<Pair<String, List<Set<Char>>>, Boolean>,
+            ): Boolean = size > (1 shl 13)
+        }
+
+    /** Drop the memoised feasibility results (frees memory between searches). */
+    fun clearCaches() {
+        feasibleCache.clear()
+    }
 
     fun compile(pattern: String): Compiled =
         compileCache.getOrPut(pattern) { RegexParser(pattern).parse() }

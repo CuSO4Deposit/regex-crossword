@@ -18,24 +18,28 @@ import io.github.cuso4deposit.regexcrossword.engine.Puzzle
  * Bump it on *any* change to the generator algorithm, the pinned presets, or
  * the seed bases.
  */
-const val GENERATOR_VERSION = 4
+const val GENERATOR_VERSION = 5
 
 data class PuzzleId(val version: Int, val difficulty: Difficulty, val seed: Int)
 
 /**
- * Pinned presets. `targetScore` drives the clue opacity (higher = fewer
- * literals = fewer directly-fillable cells). medium is the old "hard"
- * (target ≈ 73); hard is looser (target ≈ 85, ~15% literal tokens).
+ * Pinned presets.
+ *
+ * MEDIUM is the former constructive HARD: hex, target 85, position-free
+ * structural clues (opaque, but several solutions). HARD is generated with
+ * solver feedback so it has a genuinely **unique** solution; generation takes
+ * seconds and runs off the main thread.
  */
 enum class Difficulty(
     val label: String,
     val tier: String,
     val seedBase: Int,
     val targetScore: Double?,
+    val unique: Boolean,
 ) {
-    EASY("Easy", "easy", 1_000_000, null),
-    MEDIUM("Medium", "medium", 2_000_000, 73.0),
-    HARD("Hard", "hard", 3_000_000, 85.0),
+    EASY("Easy", "easy", 1_000_000, null, false),
+    MEDIUM("Medium", "hard", 2_000_000, 85.0, false),
+    HARD("Hard", "hard", 3_000_000, null, true),
 }
 
 /** The versioned level -> seed bijection for one difficulty. */
@@ -54,12 +58,12 @@ fun generatePuzzle(id: PuzzleId): Puzzle {
     require(id.version == GENERATOR_VERSION) {
         "cannot generate a level from generator version ${id.version}"
     }
-    return Generator.constructive(
-        GenConfig(
-            edge = 5,
-            difficulty = id.difficulty.tier,
-            seed = id.seed,
-            targetScore = id.difficulty.targetScore,
-        ),
+    val cfg = GenConfig(
+        edge = 5,
+        difficulty = id.difficulty.tier,
+        seed = id.seed,
+        targetScore = id.difficulty.targetScore,
+        allowBackref = id.difficulty.unique,
     )
+    return if (id.difficulty.unique) Generator.unique(cfg) else Generator.constructive(cfg)
 }

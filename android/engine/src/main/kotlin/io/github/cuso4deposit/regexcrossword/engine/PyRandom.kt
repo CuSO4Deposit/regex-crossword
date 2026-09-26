@@ -126,6 +126,36 @@ class PyRandom(seed: Long) {
 
     fun <T> choice(seq: List<T>): T = seq[randbelow(seq.size)]
 
+    /**
+     * CPython `random.choices(population, weights=..., k=1)[0]` for float
+     * weights: cumulative weights, a single `random()` draw and a right bisect.
+     */
+    fun <T> choicesOne(population: List<T>, weights: List<Double>): T {
+        require(population.size == weights.size)
+        val n = population.size
+        val cumulative = ArrayList<Double>(n)
+        var running = 0.0
+        for (w in weights) {
+            running += w
+            cumulative.add(running)
+        }
+        require(n > 0) { "population must not be empty" }
+        val total = cumulative[n - 1]
+        require(total > 0.0) { "total of weights must be positive" }
+        val x = nextDouble() * total
+        return population[bisectRight(cumulative, x, 0, n - 1)]
+    }
+
+    private fun bisectRight(a: List<Double>, x: Double, lo0: Int, hi0: Int): Int {
+        var lo = lo0
+        var hi = hi0
+        while (lo < hi) {
+            val mid = (lo + hi) / 2
+            if (x < a[mid]) hi = mid else lo = mid + 1
+        }
+        return lo
+    }
+
     fun <T> shuffle(list: MutableList<T>) {
         for (i in list.size - 1 downTo 1) {
             val j = randbelow(i + 1)

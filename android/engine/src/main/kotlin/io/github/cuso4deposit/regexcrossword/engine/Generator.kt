@@ -1,6 +1,7 @@
 package io.github.cuso4deposit.regexcrossword.engine
 
 import java.util.regex.Pattern
+import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.max
 import kotlin.math.min
@@ -40,6 +41,16 @@ data class GenConfig(
     //: aim for this score (overrides the difficulty band default)
     val targetScore: Double? = null,
     val requireAllRelaxed: Boolean = true,
+    // unique-generator knobs
+    val loosen: Int = 250,
+    val literalRatio: Double? = null,
+    val minScore: Double? = null,
+    val maxScore: Double? = null,
+    val templates: Boolean = false,
+    val allowBackref: Boolean = false,
+    val fullUnique: Boolean = false,
+    val opTries: Int = 12,
+    val easyMaxSteps: Int = 40,
     val maxAttempts: Int = 8,
     val author: String = "generated",
     val name: String = "generated",
@@ -58,6 +69,23 @@ object Generator {
         "shape_negclass_word",
         "shape_alt_star",
         "shape_repeat_block",
+    )
+
+    private val TEMPLATES = listOf(
+        ".*H.*H.*",
+        "(DI|NS|TH|OM)*",
+        "[^C]*[^R]*III.*",
+        "F.*[AO].*[AO].*",
+        "(...?)\\1*",
+        "[CHMNOR]*I[CHMNOR]*",
+        "P+(..)\\1.*",
+        ".*MCC.*DD.*",
+        "(.)(.)(.)(.)\\4\\3\\2\\1",
+        "(.)C\\1X\\1",
+        "[^M]*M[^M]*",
+        "[RC]*",
+        "(S|MM|HHH)*",
+        ".*X.*RCHX.*",
     )
 
     fun constructive(cfg: GenConfig): Puzzle {
@@ -300,17 +328,19 @@ object Generator {
             else -> shapeRepeatBlock(text, alphabet, rng)
         }
 
-    private fun randomRun(tokens: List<Frag>, rng: PyRandom): Triple<Int, Int, List<Frag>>? {
+    private fun randomRun(tokens: List<Frag>, rng: PyRandom, allowBackref: Boolean): Triple<Int, Int, List<Frag>>? {
         val n = tokens.size
         if (n == 0) return null
         val i = rng.randrange(0, n)
         val j = rng.randrange(i, n)
-        return Triple(i, j, tokens.subList(i, j + 1))
+        val run = tokens.subList(i, j + 1)
+        if (!allowBackref && run.any { it.kind == "backref" }) return null
+        return Triple(i, j, run)
     }
 
     /** Replace a random span with `.*` (position-free). */
     private fun opDotstar(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
-        val run = randomRun(tokens, rng) ?: return null
+        val run = randomRun(tokens, rng, true) ?: return null
         val i = run.first
         val j = run.second
         val out = tokens.toMutableList()
@@ -323,7 +353,7 @@ object Generator {
 
     /** Replace a random span with `.*c.*` for a character it contains. */
     private fun opContains(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
-        val run = randomRun(tokens, rng) ?: return null
+        val run = randomRun(tokens, rng, true) ?: return null
         val i = run.first
         val j = run.second
         val trueText = text.substring(tokens[i].lo, tokens[j].hi)
@@ -525,4 +555,390 @@ object Generator {
 
     private fun pyRound2(x: Double): Double =
         java.math.BigDecimal(x).setScale(2, java.math.RoundingMode.HALF_EVEN).toDouble()
+
+    // ==================================================================
+    // unique generation (solver feedback) — port of generator.generate
+    // with --unique. Total: for any seed it returns a puzzle with a unique
+    // solution (the most-relaxed unique puzzle the greedy relaxation
+    // reaches); it never raises.
+    // ==================================================================
+    private data class Candidate(
+        val score: Double,
+        val tokens: List<Frag>,
+        val solver: Solver,
+        val solutions: List<Map<Cell, Char>>,
+        val stats: SolveStats,
+        val unique: Boolean,
+        val op: String,
+    )
+
+    private val operatorNames = listOf(
+        "wildcard", "class", "negclass", "dotstar", "optional",
+        "repeat", "altstar", "contains", "repeat_backref",
+    )
+    private val operatorWeightMap = mapOf(
+        "wildcard" to 2.0, "class" to 2.0, "negclass" to 1.5, "dotstar" to 1.5,
+        "optional" to 1.5, "repeat" to 1.5, "altstar" to 1.5, "contains" to 1.0,
+        "repeat_backref" to 2.0,
+    )
+    private val shaperWeightMap = mapOf(
+        "shape_class_word" to 4.0, "shape_class_star" to 2.5, "shape_literal_skel" to 3.5,
+        "shape_dot_skeleton" to 3.5, "shape_negclass_word" to 2.5,
+        "shape_alt_star" to 2.5, "shape_repeat_block" to 3.0,
+    )
+
+    private fun bandBounds(difficulty: String): Pair<Double, Double> = when (difficulty) {
+        "easy" -> 0.0 to DEFAULT_WEIGHTS.easyMax
+        "medium" -> DEFAULT_WEIGHTS.easyMax to DEFAULT_WEIGHTS.mediumMax
+        else -> DEFAULT_WEIGHTS.mediumMax to 100.0
+    }
+
+    private fun operatorWeight(name: String): Double =
+        shaperWeightMap[name] ?: operatorWeightMap.getValue(name)
+
+    private fun chooseOperator(
+        rng: PyRandom,
+        cfg: GenConfig,
+        usage: Map<String, Int>,
+        altQuota: Int?,
+        lightSet: Boolean,
+    ): String {
+        if (lightSet) {
+            val names = listOf("wildcard", "class", "negclass", "optional", "repeat")
+            return rng.choicesOne(names, names.map { 1.0 / (1.0 + (usage[it] ?: 0)) })
+        }
+        val names = ArrayList<String>()
+        for (n in operatorNames) if (n != "repeat_backref") names.add(n)
+        if (cfg.allowBackref) names.add("repeat_backref")
+        names.addAll(shaperNames)
+        val quota = altQuota ?: cfg.maxChunkAlts
+        val filtered = names.filter { !(it == "shape_alt_star" && (usage[it] ?: 0) >= quota) }
+        return rng.choicesOne(filtered, filtered.map { operatorWeight(it) / (1.0 + (usage[it] ?: 0)) })
+    }
+
+    private fun isLiteralFrag(tok: Frag, text: String): Boolean =
+        tok.single && tok.hi - tok.lo == 1 && tok.body == PyRe.escape(text[tok.lo].toString())
+
+    private fun literalFraction(tokens: Map<LineKey, List<Frag>>, texts: Map<LineKey, String>): Double {
+        var total = 0
+        var literals = 0
+        for ((key, toks) in tokens) {
+            val text = texts.getValue(key)
+            for (tok in toks) {
+                total++
+                if (isLiteralFrag(tok, text)) literals++
+            }
+        }
+        return if (total == 0) 0.0 else literals.toDouble() / total
+    }
+
+    private fun replaceRun(tokens: List<Frag>, i: Int, j: Int, frag: Frag): List<Frag> {
+        val out = tokens.toMutableList()
+        repeat(j - i + 1) { out.removeAt(i) }
+        out.add(i, frag)
+        return out
+    }
+
+    private fun renderPlain(tokens: List<Frag>): String =
+        tokens.filter { it.kind == "plain" }.joinToString("") { it.body }
+
+    private fun singleIndices(tokens: List<Frag>): List<Int> =
+        tokens.indices.filter { tokens[it].single && tokens[it].hi - tokens[it].lo == 1 }
+
+    private fun smallestPeriod(text: String): Int? {
+        for (p in 1 until text.length) {
+            if (text.length % p == 0 && text == text.substring(0, p).repeat(text.length / p)) return p
+        }
+        return null
+    }
+
+    private fun opWildcard(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val singles = singleIndices(tokens)
+        if (singles.isEmpty()) return null
+        val i = rng.choice(singles)
+        return replaceRun(tokens, i, i, Frag(".", tokens[i].lo, tokens[i].hi, true))
+    }
+
+    private fun opClass(tokens: List<Frag>, text: String, rng: PyRandom, alphabet: String): List<Frag>? {
+        val singles = singleIndices(tokens)
+        if (singles.isEmpty()) return null
+        val i = rng.choice(singles)
+        val trueCh = text[tokens[i].lo]
+        val extras = alphabet.filter { it != trueCh }
+        val extra = rng.sample(extras.toList(), min(3, alphabet.length - 1))
+        val items = (listOf(trueCh.toString()) + extra.map { it.toString() }).toSortedSet()
+        val body = "[" + items.joinToString("") { PyRe.escape(it) } + "]"
+        return replaceRun(tokens, i, i, Frag(body, tokens[i].lo, tokens[i].hi, true))
+    }
+
+    private fun opNegclass(tokens: List<Frag>, text: String, rng: PyRandom, alphabet: String): List<Frag>? {
+        val singles = singleIndices(tokens)
+        if (singles.isEmpty()) return null
+        val others = alphabet.filter { it != text[tokens[singles[0]].lo] }
+        if (others.isEmpty()) return null
+        val i = rng.choice(singles)
+        val x = rng.choice(alphabet.filter { it != text[tokens[i].lo] }.toList())
+        val body = "[^" + PyRe.escape(x.toString()) + "]"
+        return replaceRun(tokens, i, i, Frag(body, tokens[i].lo, tokens[i].hi, true))
+    }
+
+    private fun opOptional(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val run = randomRun(tokens, rng, false) ?: return null
+        val i = run.first
+        val j = run.second
+        val group = run.third
+        if (group.size == 1 && !group[0].single) return null
+        val body = "(?:" + renderPlain(group) + ")?"
+        return replaceRun(tokens, i, j, Frag(body, tokens[i].lo, tokens[j].hi, false))
+    }
+
+    private fun opRepeat(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val run = randomRun(tokens, rng, false) ?: return null
+        val i = run.first
+        val j = run.second
+        val trueText = text.substring(tokens[i].lo, tokens[j].hi)
+        if (trueText.length < 2) return null
+        val p = smallestPeriod(trueText) ?: return null
+        val body = "(?:" + PyRe.escape(trueText.substring(0, p)) + ")+"
+        return replaceRun(tokens, i, j, Frag(body, tokens[i].lo, tokens[j].hi, false))
+    }
+
+    private fun opRepeatBackref(tokens: List<Frag>, text: String, rng: PyRandom): List<Frag>? {
+        val run = randomRun(tokens, rng, false) ?: return null
+        val i = run.first
+        val j = run.second
+        val trueText = text.substring(tokens[i].lo, tokens[j].hi)
+        if (trueText.length < 2) return null
+        val p = smallestPeriod(trueText) ?: return null
+        return replaceRun(
+            tokens, i, j,
+            Frag(PyRe.escape(trueText.substring(0, p)), tokens[i].lo, tokens[j].hi, false, "backref", "\\#*"),
+        )
+    }
+
+    private fun opAltstar(tokens: List<Frag>, text: String, rng: PyRandom, alphabet: String): List<Frag>? {
+        val singles = singleIndices(tokens)
+        if (singles.isEmpty()) return null
+        val i = rng.choice(singles)
+        val trueCh = text[tokens[i].lo]
+        val extra = rng.sample(alphabet.toList(), min(3, alphabet.length))
+        val body = "(?:" +
+            (listOf(trueCh.toString()) + extra.map { it.toString() }).joinToString("|") { PyRe.escape(it) } +
+            ")*"
+        return replaceRun(tokens, i, i, Frag(body, tokens[i].lo, tokens[i].hi, false))
+    }
+
+    private fun buildOperator(
+        op: String,
+        tokens: List<Frag>,
+        text: String,
+        rng: PyRandom,
+        cfg: GenConfig,
+    ): List<Frag>? = when (op) {
+        "wildcard" -> opWildcard(tokens, text, rng)
+        "class" -> opClass(tokens, text, rng, cfg.alphabet)
+        "negclass" -> opNegclass(tokens, text, rng, cfg.alphabet)
+        "dotstar" -> opDotstar(tokens, text, rng)
+        "optional" -> opOptional(tokens, text, rng)
+        "repeat" -> opRepeat(tokens, text, rng)
+        "altstar" -> opAltstar(tokens, text, rng, cfg.alphabet)
+        "contains" -> opContains(tokens, text, rng)
+        else -> opRepeatBackref(tokens, text, rng)
+    }
+
+    fun unique(cfg: GenConfig): Puzzle {
+        RegexEngine.clearCaches()
+        val rng = PyRandom(cfg.seed.toLong())
+        val resolvedKind =
+            if (cfg.kind == "auto") (if (cfg.difficulty == "easy") "rect" else "hex") else cfg.kind
+        val geo: Geometry =
+            if (resolvedKind == "rect") RectGeometry(cfg.edge, cfg.edge) else HexGeometry(cfg.edge)
+        geo.validate()
+        val families = geo.families
+        val (baseLo, baseHi) = bandBounds(cfg.difficulty)
+        val customWindow = cfg.minScore != null || cfg.maxScore != null
+        val lo = cfg.minScore ?: baseLo
+        val hi = cfg.maxScore ?: baseHi
+        val target: Double? = cfg.targetScore ?: when (cfg.difficulty) {
+            "hard" -> lo + 0.1 * (hi - lo)
+            "medium" -> lo + 0.5 * (hi - lo)
+            else -> 0.6 * hi
+        }
+        fun reached(s: SolveStats): Boolean =
+            if (target == null) (lo <= s.score && s.score <= hi) else s.score >= target
+        val defaultCap = when (cfg.difficulty) {
+            "medium" -> 0.6
+            else -> null
+        }
+        val literalCap = cfg.maxLiteralFraction ?: defaultCap
+
+        repeat(cfg.maxAttempts) {
+            val solution = randomSolution(geo, cfg.alphabet, rng)
+            val texts = lineTexts(geo, solution)
+            var tokensByLine = LinkedHashMap<LineKey, MutableList<Frag>>()
+            for ((k, t) in texts) tokensByLine[k] = literalTokens(t).toMutableList()
+
+            fun styleOk(): Boolean =
+                literalCap == null || literalFraction(tokensByLine, texts) <= literalCap
+
+            fun evaluate(tokens: Map<LineKey, List<Frag>>): Triple<Solver, List<Map<Cell, Char>>, SolveStats> {
+                val clues = cluesFromTokens(tokens, families)
+                val probe = buildPuzzle(geo, cfg, clues, solution)
+                val s = Solver(probe, cfg.alphabet.toList())
+                val solutions: List<Map<Cell, Char>>
+                val stats: SolveStats
+                if (cfg.fullUnique) {
+                    solutions = s.solveAll(2)
+                    stats = s.solvePropagationOnly().second
+                } else {
+                    val r = s.solvePropagationOnly()
+                    solutions = r.first
+                    stats = r.second
+                }
+                return Triple(s, solutions, stats)
+            }
+
+            var solver: Solver
+            var solutions: List<Map<Cell, Char>>
+            var stats: SolveStats
+            var isUnique: Boolean
+            val initial = evaluate(tokensByLine)
+            solver = initial.first
+            solutions = initial.second
+            stats = initial.third
+            isUnique = solutions.size == 1
+
+            if (cfg.templates) {
+                val keys = tokensByLine.keys.toMutableList()
+                rng.shuffle(keys)
+                for (key in keys) {
+                    val text = texts.getValue(key)
+                    val candidates = TEMPLATES.filter { fullmatch(it, text) }.toMutableList()
+                    rng.shuffle(candidates)
+                    for (cand in candidates) {
+                        val trial = LinkedHashMap(tokensByLine)
+                        trial[key] = mutableListOf(Frag(cand, 0, text.length, false))
+                        val result = evaluate(trial)
+                        if (result.second.size == 1 && reached(result.third)) {
+                            tokensByLine = trial
+                            solver = result.first
+                            solutions = result.second
+                            stats = result.third
+                            isUnique = true
+                            break
+                        }
+                    }
+                }
+            }
+
+            var accepted = 0
+            val usage = HashMap<String, Int>()
+            val altQuota = rng.randint(0, cfg.maxChunkAlts)
+
+            fun build(op: String, key: LineKey): List<Frag>? =
+                if (op in shaperNames) {
+                    applyShaper(op, texts.getValue(key), cfg.alphabet, rng)
+                } else {
+                    buildOperator(op, tokensByLine.getValue(key), texts.getValue(key), rng, cfg)
+                }
+
+            fun tryApply(key: LineKey, light: Boolean): Boolean {
+                val current = renderTokens(tokensByLine.getValue(key))
+                val baseScore = stats.score
+                val close = target != null && (target - baseScore) <= 12.0
+                var best: Candidate? = null
+                var bestLight = Double.MAX_VALUE
+                var bestPair: Pair<Int, Double>? = null
+                for (t in 0 until cfg.opTries) {
+                    val op = if (light) {
+                        rng.choice(listOf("wildcard", "class", "negclass"))
+                    } else {
+                        chooseOperator(rng, cfg, usage, altQuota, lightSet = close)
+                    }
+                    val newTokens = build(op, key) ?: continue
+                    val rendered = renderTokens(newTokens)
+                    if (rendered == current) continue
+                    if (!fullmatch(rendered, texts.getValue(key))) continue
+                    val trial = LinkedHashMap(tokensByLine)
+                    trial[key] = newTokens.toMutableList()
+                    val result = evaluate(trial)
+                    val tSolutions = result.second
+                    val tStats = result.third
+                    val tUnique = tSolutions.size == 1
+                    if (!tUnique) continue
+                    if (tStats.score > hi) continue
+                    if (!light && tStats.score < baseScore) continue
+                    val candidate = Candidate(tStats.score, newTokens, result.first, tSolutions, tStats, tUnique, op)
+                    if (light) {
+                        if (candidate.score < bestLight) {
+                            bestLight = candidate.score
+                            best = candidate
+                        }
+                    } else {
+                        val goal = target ?: hi
+                        val over = if (candidate.score <= goal) 0 else 1
+                        val keyDist = over to abs(candidate.score - goal)
+                        val previous = bestPair
+                        val better = previous == null ||
+                            keyDist.first < previous.first ||
+                            (keyDist.first == previous.first && keyDist.second < previous.second)
+                        if (better) {
+                            bestPair = keyDist
+                            best = candidate
+                        }
+                        if (abs(candidate.score - goal) <= 1.0) break
+                    }
+                }
+                val chosen = best ?: return false
+                tokensByLine[key] = chosen.tokens.toMutableList()
+                solver = chosen.solver
+                solutions = chosen.solutions
+                stats = chosen.stats
+                isUnique = chosen.unique
+                usage[chosen.op] = (usage[chosen.op] ?: 0) + 1
+                accepted++
+                return true
+            }
+
+            val requireRelax = cfg.requireAllRelaxed && cfg.difficulty != "easy"
+            var allRelaxed = true
+            if (requireRelax) {
+                val keys = tokensByLine.keys.toMutableList()
+                rng.shuffle(keys)
+                for (key in keys) {
+                    if (lineIsLiteral(tokensByLine.getValue(key), texts.getValue(key))) {
+                        tryApply(key, light = true)
+                    }
+                }
+                allRelaxed = tokensByLine.all { !lineIsLiteral(it.value, texts.getValue(it.key)) }
+            }
+
+            if (allRelaxed) {
+                for (i in 0 until cfg.loosen) {
+                    val key = rng.choice(tokensByLine.keys.toList())
+                    var applied = tryApply(key, light = false)
+                    if (!applied) {
+                        val others = tokensByLine.keys.toMutableList()
+                        rng.shuffle(others)
+                        applied = others.any { tryApply(it, light = false) }
+                        if (!applied) break
+                    }
+                    if (reached(stats) && styleOk()) break
+                    if (!customWindow && cfg.difficulty == "easy" && accepted >= cfg.easyMaxSteps) break
+                    if (cfg.literalRatio != null && literalFraction(tokensByLine, texts) <= cfg.literalRatio!!) break
+                }
+            }
+
+            val final = evaluate(tokensByLine)
+            solutions = final.second
+            stats = final.third
+            isUnique = solutions.size == 1
+            if (isUnique) {
+                return buildPuzzle(geo, cfg, cluesFromTokens(tokensByLine, families), solution)
+            }
+        }
+        error("unique generation failed for difficulty ${cfg.difficulty}")
+    }
 }
+
+class GenerationError(message: String) : RuntimeException(message)

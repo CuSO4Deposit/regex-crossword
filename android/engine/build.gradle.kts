@@ -26,6 +26,7 @@ sourceSets {
 
 tasks.test {
     useJUnitPlatform()
+    maxHeapSize = "2g"
     testLogging {
         events("passed", "failed", "skipped")
     }

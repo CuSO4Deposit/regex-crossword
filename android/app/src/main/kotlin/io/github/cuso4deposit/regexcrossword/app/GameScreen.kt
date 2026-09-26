@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -62,24 +64,94 @@ private fun directionSymbol(kind: String, family: String): String = when (family
     else -> "\u2193"
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
-    val context = LocalContext.current
-    val store = remember { GameStore(context) }
-    val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
-
     val cache = remember { HashMap<String, Puzzle>() }
     val cacheOrder = remember { ArrayDeque<String>() }
+
     fun cachePut(key: String, value: Puzzle) {
         if (cache.put(key, value) == null) cacheOrder.addLast(key)
         while (cacheOrder.size > 64) cache.remove(cacheOrder.removeFirst())
     }
 
     val key = "${id.version}/${id.difficulty.name}/${id.seed}"
-    val puzzle = remember(key) {
-        cache[key] ?: generatePuzzle(id).also { cachePut(key, it) }
+    var puzzle by remember(key) { mutableStateOf(cache[key]) }
+    LaunchedEffect(key) {
+        if (puzzle == null) {
+            val generated = withContext(Dispatchers.Default) { generatePuzzle(id) }
+            cachePut(key, generated)
+            puzzle = generated
+        }
     }
+    LaunchedEffect(key) {
+        val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
+        val ahead = if (id.difficulty.unique) 1 else 3
+        for (offset in 1..ahead) {
+            val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, level + offset))
+            val nextKey = "${nextId.version}/${nextId.difficulty.name}/${nextId.seed}"
+            if (!cache.containsKey(nextKey)) {
+                val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
+                cachePut(nextKey, generated)
+            }
+        }
+    }
+
+    val loaded = puzzle
+    if (loaded == null) {
+        GeneratingScreen(id, onBack)
+        return
+    }
+    GameContent(id, loaded, onBack, onNextLevel)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GeneratingScreen(id: PuzzleId, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("${id.difficulty.label} \u00B7 Level ${levelOf(id.difficulty, id.seed) + 1}") },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            CircularProgressIndicator()
+            Spacer(Modifier.height(16.dp))
+            Text("Generating a unique puzzle\u2026", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "HARD levels are solved to guarantee a unique answer; this can take a few seconds.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun GameContent(
+    id: PuzzleId,
+    puzzle: Puzzle,
+    onBack: () -> Unit,
+    onNextLevel: () -> Unit,
+) {
+    val context = LocalContext.current
+    val store = remember { GameStore(context) }
+    val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
+    val key = "${id.version}/${id.difficulty.name}/${id.seed}"
     val solver = remember(puzzle) { Solver(puzzle) }
     val saved = remember(key) { store.load(id) }
     val validCells = remember(puzzle) { puzzle.geometry.cells().toHashSet() }
@@ -106,16 +178,6 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
     var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
     var showSolved by remember(key) { mutableStateOf(false) }
 
-    LaunchedEffect(id) {
-        for (offset in 1..3) {
-            val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, level + offset))
-            val nextKey = "${nextId.version}/${nextId.difficulty.name}/${nextId.seed}"
-            if (!cache.containsKey(nextKey)) {
-                val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
-                cachePut(nextKey, generated)
-            }
-        }
-    }
     LaunchedEffect(id, store) { store.savePosition(id) }
     LaunchedEffect(id, store) {
         snapshotFlow { Triple(grid.toMap(), notes.toMap(), selected) }.collect { (g, n, s) ->
