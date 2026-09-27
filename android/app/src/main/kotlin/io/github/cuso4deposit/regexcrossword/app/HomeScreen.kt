@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -61,10 +62,10 @@ fun HomeScreen(
                 )
             }
             Spacer(Modifier.height(20.dp))
-            Text("Regex Crossword", style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Fill every line so it matches its regular expression.",
+                text = stringResource(R.string.home_tagline),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -76,9 +77,9 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = onTutorial) { Text("How to play") }
-                TextButton(onClick = onLicense) { Text("License") }
-                TextButton(onClick = onAbout) { Text("About") }
+                TextButton(onClick = onTutorial) { Text(stringResource(R.string.home_how_to_play)) }
+                TextButton(onClick = onLicense) { Text(stringResource(R.string.home_license)) }
+                TextButton(onClick = onAbout) { Text(stringResource(R.string.home_about)) }
             }
         }
     }
@@ -86,11 +87,14 @@ fun HomeScreen(
 
 @Composable
 private fun DifficultyCard(difficulty: Difficulty, onClick: () -> Unit) {
-    val description = when (difficulty) {
-        Difficulty.EASY -> "Rectangle \u00B7 5\u00D75 \u00B7 a gentle warm-up"
-        Difficulty.MEDIUM -> "Hexagon \u00B7 loose clues"
-        Difficulty.HARD -> "Hexagon \u00B7 unique answer"
-    }
+    val label = stringResource(difficulty.labelRes)
+    val description = stringResource(
+        when (difficulty) {
+            Difficulty.EASY -> R.string.difficulty_easy_desc
+            Difficulty.MEDIUM -> R.string.difficulty_medium_desc
+            Difficulty.HARD -> R.string.difficulty_hard_desc
+        },
+    )
     ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -99,7 +103,7 @@ private fun DifficultyCard(difficulty: Difficulty, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(difficulty.label, style = MaterialTheme.typography.titleLarge)
+                Text(label, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = description,

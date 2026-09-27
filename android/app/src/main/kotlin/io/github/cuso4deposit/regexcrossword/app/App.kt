@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 
 private sealed interface Screen {
     data object Home : Screen
@@ -38,9 +39,12 @@ fun HexregexApp() {
             onAbout = { screen = Screen.About },
         )
 
-        Screen.Tutorial -> InfoScreen("How to play", TUTORIAL_BLOCKS, onBack = { goHome() })
-        Screen.License -> InfoScreen("License", LICENSE_BLOCKS, onBack = { goHome() })
-        Screen.About -> InfoScreen("About", ABOUT_BLOCKS, onBack = { goHome() })
+        Screen.Tutorial ->
+            InfoScreen(stringResource(R.string.title_how_to_play), tutorialBlocks(), onBack = { goHome() })
+        Screen.License ->
+            InfoScreen(stringResource(R.string.title_license), licenseBlocks(), onBack = { goHome() })
+        Screen.About ->
+            InfoScreen(stringResource(R.string.title_about), aboutBlocks(), onBack = { goHome() })
 
         is Screen.Levels -> {
             BackHandler { goHome() }

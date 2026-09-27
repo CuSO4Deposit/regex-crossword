@@ -7,6 +7,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 /** On-screen letter keyboard: tap a letter to fill the selected cell. */
@@ -28,7 +29,7 @@ fun LetterPalette(
                 Text(letter.toString())
             }
         }
-        Tip("Delete \u2014 clear the selected cell") {
+        Tip(stringResource(R.string.tooltip_delete)) {
             OutlinedButton(onClick = onClear) {
                 Text("\u232B")
             }

@@ -17,6 +17,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 /** A small structured-block vocabulary so the info pages can be formatted. */
@@ -29,12 +30,6 @@ sealed interface InfoBlock {
 
 private val ORIGINAL_PUZZLE =
     "https://puzzles.mit.edu/2013/coinheist.com/rubik/a_regular_crossword/"
-
-private const val CREDIT =
-    "This app is an independent implementation. The hexagonal \u201CA Regular " +
-        "Crossword\u201D form was popularised by Dan Gulotta (based on an idea by " +
-        "Palmer Mebane) in MIT Mystery Hunt 2013. This app includes neither the " +
-        "original puzzle nor its text."
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,51 +112,41 @@ private fun InfoBlockView(block: InfoBlock) {
     }
 }
 
-val TUTORIAL_BLOCKS: List<InfoBlock> = listOf(
-    InfoBlock.Heading("The goal"),
-    InfoBlock.Body(
-        "Every line of the grid is a regular expression. Fill the cells so that " +
-            "each line, read in its own direction, matches its clue exactly \u2014 a " +
-            "whole-string match.",
-    ),
-    InfoBlock.Heading("Grids"),
+@Composable
+fun tutorialBlocks(): List<InfoBlock> = listOf(
+    InfoBlock.Heading(stringResource(R.string.tut_goal_heading)),
+    InfoBlock.Body(stringResource(R.string.tut_goal_body)),
+    InfoBlock.Heading(stringResource(R.string.tut_grids_heading)),
     InfoBlock.Item(
-        "Rectangle (Easy)",
-        "each row reads left to right; each column reads top to bottom.",
+        stringResource(R.string.tut_rect_term),
+        stringResource(R.string.tut_rect_body),
     ),
     InfoBlock.Item(
-        "Hexagon (Medium / Hard)",
-        "three colour-coded directions. The arrow beside a clue shows where it " +
-            "reads from; the cell ringed in that colour is the first cell of the line.",
+        stringResource(R.string.tut_hex_term),
+        stringResource(R.string.tut_hex_body),
     ),
-    InfoBlock.Item("X \u00B7 blue", "read bottom to top (up arrow)."),
-    InfoBlock.Item("Y \u00B7 green", "read left to right (right arrow)."),
-    InfoBlock.Item("Z \u00B7 red", "read top to bottom (down arrow)."),
-    InfoBlock.Heading("Controls"),
-    InfoBlock.Item("Tap a cell", "then tap a letter to fill it; backspace clears it."),
-    InfoBlock.Item(
-        "Hint",
-        "reveals one cell from a completion consistent with what you have entered.",
-    ),
-    InfoBlock.Item(
-        "Givens",
-        "fills cells whose letter a clue literally writes down at a fixed position " +
-            "(no search).",
-    ),
-    InfoBlock.Item("Notes", "toggles pencil marks: tap letters to add or remove candidates."),
-    InfoBlock.Item("Clear", "erases the grid, after asking."),
-    InfoBlock.Item("Solve", "menu (top right) \u2014 fills one valid solution after confirming."),
-    InfoBlock.Item("Undo / Redo", "top bar \u21B6 \u21B7 arrows \u2014 step through your edits."),
-    InfoBlock.Heading("Difficulty"),
-    InfoBlock.Item("Easy", "rectangle, 5\u00D75."),
-    InfoBlock.Item("Medium", "hexagon with loose clues \u2014 several valid solutions."),
-    InfoBlock.Item("Hard", "hexagon with a unique solution, pre-generated with the solver."),
-    InfoBlock.Body("Progress and the timer are saved automatically for every level."),
+    InfoBlock.Item(stringResource(R.string.tut_x_term), stringResource(R.string.tut_x_body)),
+    InfoBlock.Item(stringResource(R.string.tut_y_term), stringResource(R.string.tut_y_body)),
+    InfoBlock.Item(stringResource(R.string.tut_z_term), stringResource(R.string.tut_z_body)),
+    InfoBlock.Heading(stringResource(R.string.tut_controls_heading)),
+    InfoBlock.Item(stringResource(R.string.tut_tap_term), stringResource(R.string.tut_tap_body)),
+    InfoBlock.Item(stringResource(R.string.tut_hint_term), stringResource(R.string.tut_hint_body)),
+    InfoBlock.Item(stringResource(R.string.tut_givens_term), stringResource(R.string.tut_givens_body)),
+    InfoBlock.Item(stringResource(R.string.tut_notes_term), stringResource(R.string.tut_notes_body)),
+    InfoBlock.Item(stringResource(R.string.tut_clear_term), stringResource(R.string.tut_clear_body)),
+    InfoBlock.Item(stringResource(R.string.tut_solve_term), stringResource(R.string.tut_solve_body)),
+    InfoBlock.Item(stringResource(R.string.tut_undo_term), stringResource(R.string.tut_undo_body)),
+    InfoBlock.Heading(stringResource(R.string.tut_difficulty_heading)),
+    InfoBlock.Item(stringResource(R.string.tut_easy_term), stringResource(R.string.tut_easy_body)),
+    InfoBlock.Item(stringResource(R.string.tut_medium_term), stringResource(R.string.tut_medium_body)),
+    InfoBlock.Item(stringResource(R.string.tut_hard_term), stringResource(R.string.tut_hard_body)),
+    InfoBlock.Body(stringResource(R.string.tut_saved_body)),
 )
 
-val LICENSE_BLOCKS: List<InfoBlock> = listOf(
-    InfoBlock.Heading("MIT License"),
-    InfoBlock.Body("Copyright (c) 2026 cuso4deposit"),
+@Composable
+fun licenseBlocks(): List<InfoBlock> = listOf(
+    InfoBlock.Heading(stringResource(R.string.license_heading)),
+    InfoBlock.Body(stringResource(R.string.license_copyright)),
     InfoBlock.Body(
         """
         Permission is hereby granted, free of charge, to any person obtaining a
@@ -188,21 +173,18 @@ val LICENSE_BLOCKS: List<InfoBlock> = listOf(
         USE OR OTHER DEALINGS IN THE SOFTWARE.
         """.trimIndent(),
     ),
-    InfoBlock.Heading("Credits"),
-    InfoBlock.Body(CREDIT),
-    InfoBlock.Link("Original puzzle \u2014 A Regular Crossword (MIT Mystery Hunt 2013)", ORIGINAL_PUZZLE),
+    InfoBlock.Heading(stringResource(R.string.credits_heading)),
+    InfoBlock.Body(stringResource(R.string.credits_body)),
+    InfoBlock.Link(stringResource(R.string.credits_link), ORIGINAL_PUZZLE),
 )
 
-val ABOUT_BLOCKS: List<InfoBlock> = listOf(
-    InfoBlock.Body("Regex Crossword 0.1.0"),
-    InfoBlock.Body(
-        "An offline regex-crossword app. Levels are generated on device from a " +
-            "seed; hard levels are pre-generated with the solver to guarantee a " +
-            "unique solution.",
-    ),
-    InfoBlock.Body("No accounts, no ads, no network access, no permissions."),
-    InfoBlock.Body("Built with Kotlin and Jetpack Compose."),
-    InfoBlock.Heading("Credits"),
-    InfoBlock.Body(CREDIT),
-    InfoBlock.Link("Original puzzle \u2014 A Regular Crossword (MIT Mystery Hunt 2013)", ORIGINAL_PUZZLE),
+@Composable
+fun aboutBlocks(): List<InfoBlock> = listOf(
+    InfoBlock.Body(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)),
+    InfoBlock.Body(stringResource(R.string.about_desc)),
+    InfoBlock.Body(stringResource(R.string.about_privacy)),
+    InfoBlock.Body(stringResource(R.string.about_built)),
+    InfoBlock.Heading(stringResource(R.string.credits_heading)),
+    InfoBlock.Body(stringResource(R.string.credits_body)),
+    InfoBlock.Link(stringResource(R.string.credits_link), ORIGINAL_PUZZLE),
 )

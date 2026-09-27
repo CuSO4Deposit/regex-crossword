@@ -1,5 +1,6 @@
 package io.github.cuso4deposit.regexcrossword.app
 
+import androidx.annotation.StringRes
 import io.github.cuso4deposit.regexcrossword.engine.GenConfig
 import io.github.cuso4deposit.regexcrossword.engine.Generator
 import io.github.cuso4deposit.regexcrossword.engine.Puzzle
@@ -31,15 +32,15 @@ data class PuzzleId(val version: Int, val difficulty: Difficulty, val seed: Int)
  * seconds and runs off the main thread.
  */
 enum class Difficulty(
-    val label: String,
+    @StringRes val labelRes: Int,
     val tier: String,
     val seedBase: Int,
     val targetScore: Double?,
     val unique: Boolean,
 ) {
-    EASY("Easy", "easy", 1_000_000, null, false),
-    MEDIUM("Medium", "hard", 2_000_000, 85.0, false),
-    HARD("Hard", "hard", 3_000_000, 76.0, true),
+    EASY(R.string.difficulty_easy, "easy", 1_000_000, null, false),
+    MEDIUM(R.string.difficulty_medium, "hard", 2_000_000, 85.0, false),
+    HARD(R.string.difficulty_hard, "hard", 3_000_000, 76.0, true),
 }
 
 /** The versioned level -> seed bijection for one difficulty. */

@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -52,7 +53,7 @@ fun LevelSelectScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Choose a level") },
+                    title = { Text(stringResource(R.string.level_select_title)) },
                     navigationIcon = {
                         TextButton(onClick = onBack) {
                             Text("\u2190", style = MaterialTheme.typography.titleLarge)
@@ -64,7 +65,7 @@ fun LevelSelectScreen(
                         Tab(
                             selected = option == difficulty,
                             onClick = { difficulty = option },
-                            text = { Text(option.label) },
+                            text = { Text(stringResource(option.labelRes)) },
                         )
                     }
                 }
@@ -81,7 +82,13 @@ fun LevelSelectScreen(
                 onClick = { onOpen(lastDifficulty, lastLevel) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Continue  \u00B7  ${lastDifficulty.label} Level ${lastLevel + 1}")
+                Text(
+                    stringResource(
+                        R.string.level_select_continue,
+                        stringResource(lastDifficulty.labelRes),
+                        lastLevel + 1,
+                    ),
+                )
             }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(4),
@@ -122,7 +129,7 @@ fun LevelSelectScreen(
                 onClick = { count += 100 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Load more levels")
+                Text(stringResource(R.string.level_select_load_more))
             }
         }
     }

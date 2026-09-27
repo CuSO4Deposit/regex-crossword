@@ -1,3 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Regex Crossword</string>
+
+    <!-- Difficulties -->
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_easy_desc">Rectangle \u00B7 5\u00D75 \u00B7 a gentle warm-up</string>
+    <string name="difficulty_medium_desc">Hexagon \u00B7 loose clues</string>
+    <string name="difficulty_hard_desc">Hexagon \u00B7 unique answer</string>
+
+    <!-- Home -->
+    <string name="home_tagline">Fill every line so it matches its regular expression.</string>
+    <string name="home_how_to_play">How to play</string>
+    <string name="home_license">License</string>
+    <string name="home_about">About</string>
+
+    <!-- Screen titles -->
+    <string name="title_how_to_play">How to play</string>
+    <string name="title_license">License</string>
+    <string name="title_about">About</string>
+
+    <!-- How to play -->
+    <string name="tut_goal_heading">The goal</string>
+    <string name="tut_goal_body">Every line of the grid is a regular expression. Fill the cells so that each line, read in its own direction, matches its clue exactly \u2014 a whole-string match.</string>
+    <string name="tut_grids_heading">Grids</string>
+    <string name="tut_rect_term">Rectangle (Easy)</string>
+    <string name="tut_rect_body">each row reads left to right; each column reads top to bottom.</string>
+    <string name="tut_hex_term">Hexagon (Medium / Hard)</string>
+    <string name="tut_hex_body">three colour-coded directions. The arrow beside a clue shows where it reads from; the cell ringed in that colour is the first cell of the line.</string>
+    <string name="tut_x_term">X \u00B7 blue</string>
+    <string name="tut_x_body">read bottom to top (up arrow).</string>
+    <string name="tut_y_term">Y \u00B7 green</string>
+    <string name="tut_y_body">read left to right (right arrow).</string>
+    <string name="tut_z_term">Z \u00B7 red</string>
+    <string name="tut_z_body">read top to bottom (down arrow).</string>
+    <string name="tut_controls_heading">Controls</string>
+    <string name="tut_tap_term">Tap a cell</string>
+    <string name="tut_tap_body">then tap a letter to fill it; backspace clears it.</string>
+    <string name="tut_hint_term">Hint</string>
+    <string name="tut_hint_body">reveals one cell from a completion consistent with what you have entered.</string>
+    <string name="tut_givens_term">Givens</string>
+    <string name="tut_givens_body">fills cells whose letter a clue literally writes down at a fixed position (no search).</string>
+    <string name="tut_notes_term">Notes</string>
+    <string name="tut_notes_body">toggles pencil marks: tap letters to add or remove candidates.</string>
+    <string name="tut_clear_term">Clear</string>
+    <string name="tut_clear_body">erases the grid, after asking.</string>
+    <string name="tut_solve_term">Solve</string>
+    <string name="tut_solve_body">menu (top right) \u2014 fills one valid solution after confirming.</string>
+    <string name="tut_undo_term">Undo / Redo</string>
+    <string name="tut_undo_body">top bar \u21B6 \u21B7 arrows \u2014 step through your edits.</string>
+    <string name="tut_difficulty_heading">Difficulty</string>
+    <string name="tut_easy_term">Easy</string>
+    <string name="tut_easy_body">rectangle, 5\u00D75.</string>
+    <string name="tut_medium_term">Medium</string>
+    <string name="tut_medium_body">hexagon with loose clues \u2014 several valid solutions.</string>
+    <string name="tut_hard_term">Hard</string>
+    <string name="tut_hard_body">hexagon with a unique solution, pre-generated with the solver.</string>
+    <string name="tut_saved_body">Progress and the timer are saved automatically for every level.</string>
+
+    <!-- License / Credits -->
+    <string name="license_heading">MIT License</string>
+    <string name="license_copyright">Copyright (c) 2026 cuso4deposit</string>
+    <string name="credits_heading">Credits</string>
+    <string name="credits_body">This app is an independent implementation. The hexagonal \u201CA Regular Crossword\u201D form was popularised by Dan Gulotta (based on an idea by Palmer Mebane) in MIT Mystery Hunt 2013. This app includes neither the original puzzle nor its text.</string>
+    <string name="credits_link">Original puzzle \u2014 A Regular Crossword (MIT Mystery Hunt 2013)</string>
+
+    <!-- About -->
+    <string name="about_version">Regex Crossword %1$s</string>
+    <string name="about_desc">An offline regex-crossword app. Levels are generated on device from a seed; hard levels are pre-generated with the solver to guarantee a unique solution.</string>
+    <string name="about_privacy">No accounts, no ads, no network access, no permissions.</string>
+    <string name="about_built">Built with Kotlin and Jetpack Compose.</string>
+
+    <!-- Level select -->
+    <string name="level_select_title">Choose a level</string>
+    <string name="level_select_continue">Continue  \u00B7  %1$s Level %2$d</string>
+    <string name="level_select_load_more">Load more levels</string>
+
+    <!-- Game chrome -->
+    <string name="game_title">%1$s \u00B7 Level %2$d</string>
+    <string name="generating_title">Generating a unique puzzle\u2026</string>
+    <string name="generating_body">HARD levels are solved to guarantee a unique answer; this can take a few minutes.</string>
+    <string name="error_title">Couldn\'t prepare this puzzle.</string>
+    <string name="error_body">Something went wrong loading or generating it.</string>
+    <string name="error_retry">Try again</string>
+    <string name="back_to_levels">Back to levels</string>
+
+    <string name="tooltip_back">Back</string>
+    <string name="tooltip_undo">Undo</string>
+    <string name="tooltip_redo">Redo</string>
+    <string name="tooltip_menu">Menu</string>
+    <string name="tooltip_hint">Reveal one cell that fits what you have</string>
+    <string name="tooltip_givens">Fill cells whose letter a clue writes down</string>
+    <string name="tooltip_notes">Pencil marks \u2014 tap letters to add or remove candidates</string>
+    <string name="tooltip_notes_on">Pencil marks on \u2014 tap to turn off</string>
+    <string name="tooltip_clear">Erase every letter and note</string>
+    <string name="tooltip_delete">Delete \u2014 clear the selected cell</string>
+
+    <string name="menu_solve">Solve (fill a solution)</string>
+    <string name="menu_load_saved">Load saved solution</string>
+
+    <string name="solve_dialog_title">Solve?</string>
+    <string name="solve_dialog_body">Fill one complete valid solution? This overwrites your current entries.</string>
+    <string name="action_solve">Solve</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="clear_dialog_title">Clear?</string>
+    <string name="clear_dialog_body">Erase every letter and note on this level? You can undo this.</string>
+    <string name="action_clear">Clear</string>
+
+    <string name="action_hint">Hint</string>
+    <string name="action_givens">Givens</string>
+    <string name="action_notes">Notes</string>
+    <string name="action_notes_on">Notes on</string>
+
+    <string name="solved_snackbar">Solved! Every line matches.</string>
+    <string name="next_level">Next level</string>
+
+    <string name="msg_every_cell_filled">Every cell is filled.</string>
+    <string name="msg_solver_gave_up">Solver gave up on this clue set.</string>
+    <string name="msg_inconsistent_hint">Your entries are inconsistent \u2014 no completion exists.</string>
+    <string name="msg_hint_revealed">Hint: revealed one cell consistent with your grid.</string>
+    <string name="msg_inconsistent_solve">Your entries are inconsistent \u2014 clear or fix them first.</string>
+    <string name="msg_filled_solution">Filled one valid solution.</string>
+    <string name="msg_no_givens">No directly-given letters to fill.</string>
+    <plurals name="givens_filled">
+        <item quantity="one">Filled %1$d given letter.</item>
+        <item quantity="other">Filled %1$d given letters.</item>
+    </plurals>
+    <string name="msg_no_saved_solution">No saved solution for this level.</string>
+    <string name="msg_loaded_solution">Loaded the saved solution.</string>
+
+    <!-- Clue panel -->
+    <string name="clue_tap_hex">Tap a cell to see its three clues and their reading directions.</string>
+    <string name="clue_tap_rect">Tap a cell to see its row and column clues.</string>
+    <string name="clue_footnote_hex">Ringed cell = start of the line (X reads bottom\u2192top).</string>
+    <string name="clue_footnote_rect">Each row reads left to right; each column reads top to bottom.</string>
+
+    <!-- Status line -->
+    <string name="status_solved">Solved! Every line matches.</string>
+    <string name="status_fill_all">Fill all cells.</string>
+    <plurals name="status_failures">
+        <item quantity="one">%1$d line does not match.</item>
+        <item quantity="other">%1$d lines do not match.</item>
+    </plurals>
+    <plurals name="status_unfinished">
+        <item quantity="one">%1$d line still to fill.</item>
+        <item quantity="other">%1$d lines still to fill.</item>
+    </plurals>
 </resources>

@@ -51,6 +51,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -136,7 +138,15 @@ private fun GeneratingScreen(id: PuzzleId, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${id.difficulty.label} \u00B7 Level ${levelOf(id.difficulty, id.seed) + 1}") },
+                title = {
+                    Text(
+                        stringResource(
+                            R.string.game_title,
+                            stringResource(id.difficulty.labelRes),
+                            levelOf(id.difficulty, id.seed) + 1,
+                        ),
+                    )
+                },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("\u2190", style = MaterialTheme.typography.titleLarge)
@@ -155,10 +165,10 @@ private fun GeneratingScreen(id: PuzzleId, onBack: () -> Unit) {
         ) {
             CircularProgressIndicator()
             Spacer(Modifier.height(16.dp))
-            Text("Generating a unique puzzle\u2026", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.generating_title), style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(8.dp))
             Text(
-                "HARD levels are solved to guarantee a unique answer; this can take a few seconds.",
+                stringResource(R.string.generating_body),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
             )
@@ -173,7 +183,13 @@ private fun GenerationErrorScreen(id: PuzzleId, onRetry: () -> Unit, onBack: () 
         topBar = {
             TopAppBar(
                 title = {
-                    Text("${id.difficulty.label} \u00B7 Level ${levelOf(id.difficulty, id.seed) + 1}")
+                    Text(
+                        stringResource(
+                            R.string.game_title,
+                            stringResource(id.difficulty.labelRes),
+                            levelOf(id.difficulty, id.seed) + 1,
+                        ),
+                    )
                 },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
@@ -191,17 +207,17 @@ private fun GenerationErrorScreen(id: PuzzleId, onRetry: () -> Unit, onBack: () 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text("Couldn't prepare this puzzle.", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.error_title), style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Something went wrong loading or generating it.",
+                stringResource(R.string.error_body),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onRetry) { Text("Try again") }
+            Button(onClick = onRetry) { Text(stringResource(R.string.error_retry)) }
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onBack) { Text("Back to levels") }
+            TextButton(onClick = onBack) { Text(stringResource(R.string.back_to_levels)) }
         }
     }
 }
@@ -321,8 +337,8 @@ private fun GameContent(
             if (!solvedNotified) {
                 solvedNotified = true
                 val outcome = snackbarHostState.showSnackbar(
-                    message = "Solved! Every line matches.",
-                    actionLabel = "Next level",
+                    message = context.getString(R.string.solved_snackbar),
+                    actionLabel = context.getString(R.string.next_level),
                     duration = SnackbarDuration.Long,
                 )
                 if (outcome == SnackbarResult.ActionPerformed) onNextLevel()
@@ -339,7 +355,7 @@ private fun GameContent(
         if (busy) return
         val target = firstEmpty()
         if (target == null) {
-            message = "Every cell is filled."
+            message = context.getString(R.string.msg_every_cell_filled)
             return
         }
         busy = true
@@ -348,19 +364,19 @@ private fun GameContent(
                 withContext(Dispatchers.Default) { solver.solveWith(grid.toMap()) }
             } catch (_: SolverLimitException) {
                 busy = false
-                message = "Solver gave up on this clue set."
+                message = context.getString(R.string.msg_solver_gave_up)
                 return@launch
             }
             busy = false
             if (completion == null) {
-                message = "Your entries are inconsistent \u2014 no completion exists."
+                message = context.getString(R.string.msg_inconsistent_hint)
                 return@launch
             }
             pushUndo()
             grid[target] = completion.getValue(target)
             notes.remove(target)
             selected = target
-            message = "Hint: revealed one cell consistent with your grid."
+            message = context.getString(R.string.msg_hint_revealed)
         }
     }
 
@@ -372,12 +388,12 @@ private fun GameContent(
                 withContext(Dispatchers.Default) { solver.solveWith(grid.toMap()) }
             } catch (_: SolverLimitException) {
                 busy = false
-                message = "Solver gave up on this clue set."
+                message = context.getString(R.string.msg_solver_gave_up)
                 return@launch
             }
             busy = false
             if (completion == null) {
-                message = "Your entries are inconsistent \u2014 clear or fix them first."
+                message = context.getString(R.string.msg_inconsistent_solve)
                 return@launch
             }
             pushUndo()
@@ -385,14 +401,14 @@ private fun GameContent(
             grid.putAll(completion)
             notes.clear()
             selected = null
-            message = "Filled one valid solution."
+            message = context.getString(R.string.msg_filled_solution)
         }
     }
 
     fun fillGivens() {
         val fills = solver.givenLetters().filter { (cell, ch) -> grid[cell] != ch }
         if (fills.isEmpty()) {
-            message = "No directly-given letters to fill."
+            message = context.getString(R.string.msg_no_givens)
             return
         }
         pushUndo()
@@ -400,13 +416,13 @@ private fun GameContent(
             grid[cell] = ch
             notes.remove(cell)
         }
-        message = "Filled ${fills.size} given letter(s)."
+        message = context.resources.getQuantityString(R.plurals.givens_filled, fills.size, fills.size)
     }
 
     fun loadSavedSolution() {
         val stored = store.solvedGrid(id)
         if (stored == null) {
-            message = "No saved solution for this level."
+            message = context.getString(R.string.msg_no_saved_solution)
             return
         }
         pushUndo()
@@ -414,7 +430,7 @@ private fun GameContent(
         grid.putAll(stored.filterKeys { it in validCells })
         notes.clear()
         selected = null
-        message = "Loaded the saved solution."
+        message = context.getString(R.string.msg_loaded_solution)
     }
 
     Scaffold(
@@ -422,7 +438,13 @@ private fun GameContent(
             TopAppBar(
                 title = {
                     Column {
-                        Text("${id.difficulty.label} \u00B7 Level ${level + 1}")
+                        Text(
+                            stringResource(
+                                R.string.game_title,
+                                stringResource(id.difficulty.labelRes),
+                                level + 1,
+                            ),
+                        )
                         Text(
                             formatElapsed(elapsed),
                             style = MaterialTheme.typography.labelSmall,
@@ -431,24 +453,24 @@ private fun GameContent(
                     }
                 },
                 navigationIcon = {
-                    Tip("Back to levels") {
+                    Tip(stringResource(R.string.tooltip_back)) {
                         TextButton(onClick = onBack) {
                             Text("\u2190", style = MaterialTheme.typography.titleLarge)
                         }
                     }
                 },
                 actions = {
-                    Tip("Undo") {
+                    Tip(stringResource(R.string.tooltip_undo)) {
                         TextButton(onClick = { undo() }, enabled = undoStack.isNotEmpty()) {
                             Text("\u21B6", style = MaterialTheme.typography.titleLarge)
                         }
                     }
-                    Tip("Redo") {
+                    Tip(stringResource(R.string.tooltip_redo)) {
                         TextButton(onClick = { redo() }, enabled = redoStack.isNotEmpty()) {
                             Text("\u21B7", style = MaterialTheme.typography.titleLarge)
                         }
                     }
-                    Tip("Menu") {
+                    Tip(stringResource(R.string.tooltip_menu)) {
                         Box {
                             TextButton(onClick = { menuOpen = true }) {
                                 Text("\u22EE", style = MaterialTheme.typography.titleLarge)
@@ -458,7 +480,7 @@ private fun GameContent(
                                 onDismissRequest = { menuOpen = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Solve (fill a solution)") },
+                                    text = { Text(stringResource(R.string.menu_solve)) },
                                     enabled = !busy,
                                     onClick = {
                                         menuOpen = false
@@ -467,7 +489,7 @@ private fun GameContent(
                                 )
                                 if (solvedNow) {
                                     DropdownMenuItem(
-                                        text = { Text("Load saved solution") },
+                                        text = { Text(stringResource(R.string.menu_load_saved)) },
                                         onClick = {
                                             menuOpen = false
                                             loadSavedSolution()
@@ -541,25 +563,33 @@ private fun GameContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Tip("Reveal one cell that fits what you have") {
-                    OutlinedButton(onClick = { hint() }, enabled = !busy) { Text("Hint") }
+                Tip(stringResource(R.string.tooltip_hint)) {
+                    OutlinedButton(onClick = { hint() }, enabled = !busy) {
+                        Text(stringResource(R.string.action_hint))
+                    }
                 }
-                Tip("Fill cells whose letter a clue writes down") {
-                    OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
+                Tip(stringResource(R.string.tooltip_givens)) {
+                    OutlinedButton(onClick = { fillGivens() }) {
+                        Text(stringResource(R.string.action_givens))
+                    }
                 }
                 if (notesMode) {
-                    Tip("Pencil marks on \u2014 tap to turn off") {
-                        Button(onClick = { notesMode = false }) { Text("Notes on") }
+                    Tip(stringResource(R.string.tooltip_notes_on)) {
+                        Button(onClick = { notesMode = false }) {
+                            Text(stringResource(R.string.action_notes_on))
+                        }
                     }
                 } else {
-                    Tip("Pencil marks \u2014 tap letters to add or remove candidates") {
-                        OutlinedButton(onClick = { notesMode = true }) { Text("Notes") }
+                    Tip(stringResource(R.string.tooltip_notes)) {
+                        OutlinedButton(onClick = { notesMode = true }) {
+                            Text(stringResource(R.string.action_notes))
+                        }
                     }
                 }
-                Tip("Erase every letter and note") {
+                Tip(stringResource(R.string.tooltip_clear)) {
                     OutlinedButton(
                         onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
-                    ) { Text("Clear") }
+                    ) { Text(stringResource(R.string.action_clear)) }
                 }
             }
         }
@@ -568,18 +598,18 @@ private fun GameContent(
     if (confirmSolve) {
         AlertDialog(
             onDismissRequest = { confirmSolve = false },
-            title = { Text("Solve?") },
-            text = { Text("Fill one complete valid solution? This overwrites your current entries.") },
+            title = { Text(stringResource(R.string.solve_dialog_title)) },
+            text = { Text(stringResource(R.string.solve_dialog_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         confirmSolve = false
                         solveAll()
                     },
-                ) { Text("Solve") }
+                ) { Text(stringResource(R.string.action_solve)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmSolve = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmSolve = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -587,8 +617,8 @@ private fun GameContent(
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Clear?") },
-            text = { Text("Erase every letter and note on this level? You can undo this.") },
+            title = { Text(stringResource(R.string.clear_dialog_title)) },
+            text = { Text(stringResource(R.string.clear_dialog_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -599,10 +629,10 @@ private fun GameContent(
                         selected = null
                         message = null
                     },
-                ) { Text("Clear") }
+                ) { Text(stringResource(R.string.action_clear)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmClear = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -615,11 +645,9 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
     val isHex = kind == "hex"
     if (selected == null) {
         Text(
-            text = if (isHex) {
-                "Tap a cell to see its three clues and their reading directions."
-            } else {
-                "Tap a cell to see its row and column clues."
-            },
+            text = stringResource(
+                if (isHex) R.string.clue_tap_hex else R.string.clue_tap_rect,
+            ),
             style = MaterialTheme.typography.bodyMedium,
         )
         return
@@ -697,11 +725,9 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
             }
         }
         Text(
-            text = if (isHex) {
-                "Ringed cell = start of the line (X reads bottom\u2192top)."
-            } else {
-                "Each row reads left to right; each column reads top to bottom."
-            },
+            text = stringResource(
+                if (isHex) R.string.clue_footnote_hex else R.string.clue_footnote_rect,
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -713,10 +739,12 @@ private fun StatusLine(result: JudgeResult, message: String?) {
     val unfinished = result.lines.count { !it.complete }
     val text = when {
         message != null -> message
-        result.solved -> "Solved! Every line matches."
-        result.complete -> "${result.failures.size} line(s) do not match."
-        unfinished > 0 -> "$unfinished line(s) still to fill."
-        else -> "Fill all cells."
+        result.solved -> stringResource(R.string.status_solved)
+        result.complete ->
+            pluralStringResource(R.plurals.status_failures, result.failures.size, result.failures.size)
+        unfinished > 0 ->
+            pluralStringResource(R.plurals.status_unfinished, unfinished, unfinished)
+        else -> stringResource(R.string.status_fill_all)
     }
     Text(
         text = text,
