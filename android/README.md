@@ -88,13 +88,13 @@ On device, `PuzzleStore` serves a hard level from the bank, else a local file
 cache, else generates it on a background thread; while a hard level is open a
 background effect tops the cache up so ~50 unsolved levels are always ready.
 
-**Expert (planned) is an offline constraint-learning tier.** HARD is unique but
-~34/61 cells are still decidable from a single clue. Expert is generated
-offline by a different method — start from full-alphabet class skeletons and
-iteratively add `[^...]` exclusions until the cross-line intersections force a
-unique solution, never pinning a cell in a single clue (measured: unique,
-**0/61 single-clue-forced**, ~48 s/puzzle). It ships as its own bank. See the
-project skill for the algorithm.
+**Expert (shelved) — offline constraint-learning.** HARD is unique but ~34/61
+cells are still decidable from a single clue. An offline learner gets that down
+to 0/61 (unique, ~48 s/puzzle): start from full-alphabet class skeletons and add
+`[^...]` exclusions until the cross-line intersections force a unique solution.
+But its output is a dense per-position class wall, nothing like the MIT
+original's mixed `.*`/alternation/literal style, so it is **not shipping**. See
+the project skill for the details.
 
 Adding a tier must not disturb existing progress: a new difficulty gets its own
 `seedBase` and bank, the old tiers' `seedBase`/presets/`GENERATOR_VERSION` stay

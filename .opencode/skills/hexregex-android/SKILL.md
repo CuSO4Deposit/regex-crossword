@@ -115,7 +115,15 @@ Run without an Android SDK. Build the APK separately with
    `L+1..L+3`; cache.
 3. Progress persistence, daily challenge, share by level id.
 
-## Expert difficulty: offline constraint-learning (planned)
+## Expert difficulty: offline constraint-learning — SHELVED
+
+Status: **shelved / not shipping.** The algorithm below works (unique,
+0 single-clue-forced) but its output is a _per-position class skeleton_
+(every line a sequence of `[^...]` classes). That is fundamentally unlike the
+MIT original's style (`.*H.*H.*`, `(DI|NS|TH|OM)*`, literals, alternations,
+back-references, cross-line interaction). Uniqueness + zero single-clue givens
+demands many per-position constraints; expressing them in a fixed grid yields a
+dense class wall, not MIT-looking clues. Kept for reference only.
 
 The constructive/unique generators can produce a **unique** puzzle, but their
 uniqueness comes from _pinning cells_: on edge 5, ~34/61 cells are decidable
