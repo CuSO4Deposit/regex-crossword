@@ -535,9 +535,14 @@ private fun GameContent(
 @Composable
 private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
     val kind = puzzle.geometry.kind
+    val isHex = kind == "hex"
     if (selected == null) {
         Text(
-            text = "Tap a cell to see its three clues and their reading directions.",
+            text = if (isHex) {
+                "Tap a cell to see its three clues and their reading directions."
+            } else {
+                "Tap a cell to see its row and column clues."
+            },
             style = MaterialTheme.typography.bodyMedium,
         )
         return
@@ -591,7 +596,11 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
             }
         }
         Text(
-            text = "Ringed cell = start of the line (X reads bottom\u2192top).",
+            text = if (isHex) {
+                "Ringed cell = start of the line (X reads bottom\u2192top)."
+            } else {
+                "Each row reads left to right; each column reads top to bottom."
+            },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
