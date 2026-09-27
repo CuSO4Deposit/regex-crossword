@@ -107,8 +107,6 @@ row-length-based indentation (`.` for unknown cells).
 - [docs/generation.md](docs/generation.md) — relaxation operators, difficulty
   scoring, reproducibility and level ids
 - [docs/solving.md](docs/solving.md) — the solver and how to judge a grid
-- [docs/fdroid.md](docs/fdroid.md) — publishing the app on F-Droid (official or
-  self-hosted)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing

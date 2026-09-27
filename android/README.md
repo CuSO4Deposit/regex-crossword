@@ -165,19 +165,6 @@ Only the cross-platform regex subset the generator emits is used: literals,
 The alternate grids live in `engine/src/test/resources/*.alt.json` (used only by
 the tests).
 
-## F-Droid notes
-
-- Licence: the reference implementation and the app are both MIT (see
-  [`../LICENSE`](../LICENSE)), so F-Droid can build the app.
-- F-Droid builds from source: no prebuilt binaries, no Play Services, no
-  tracking. The app declares **no permissions**, which is ideal.
-- Provide `fastlane/metadata/android/<locale>/` (title, short/full description,
-  icon, screenshots) and a changelog per `versionCode` when you publish.
-- Use a stable `applicationId` (`io.github.cuso4deposit.regexcrossword`) and sign with your own key;
-  F-Droid can also keep its own signing key.
-- Repro builds are easier if you pin dependency versions (done here via the
-  Compose BOM and explicit versions).
-
 ## Status
 
 Implemented: level select (difficulty tabs, infinite level grid, ticks on solved

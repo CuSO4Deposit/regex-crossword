@@ -8,3 +8,7 @@ venv/
 .ruff_cache/
 build/
 dist/
+
+# Local, non-public notes and tooling (not for the published repo).
+.opencode/
+.notes/
