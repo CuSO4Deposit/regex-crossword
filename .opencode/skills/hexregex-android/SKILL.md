@@ -1,6 +1,6 @@
 ---
 name: hexregex-android
-description: Use when working on the Android/Compose app under android/ of the hexregex repo — porting the Python geometry/generator to Kotlin, regenerating CLI fixtures, running the engine acceptance tests, byte-for-byte puzzle-JSON parity, or booting an emulator to preview the UI. Trigger on "hexregex app", "android/", "port generator", "level_id -> seed", "regex crossword mobile".
+description: Use when working on the Android/Compose app under android/ of the hexregex repo — porting the Python geometry/generator to Kotlin, regenerating CLI fixtures, running the engine acceptance tests, byte-for-byte puzzle-JSON parity, building/installing the APK on a connected device or emulator (adb install -r, launch activity, screenshots), or previewing the UI. Trigger on "hexregex app", "android/", "port generator", "level_id -> seed", "install apk", "adb install", "regex crossword mobile".
 ---
 
 # hexregex Android app
@@ -106,6 +106,36 @@ Must keep passing:
 Run without an Android SDK. Build the APK separately with
 `./gradlew :app:assembleDebug` (needs `local.properties` → `sdk.dir`).
 
+## Build, install, verify on a connected device
+
+To try a change on a phone/emulator the user already has attached (don't assume
+— check first):
+
+1. `adb devices`. A usable line ends in `device`; `unauthorized` means the user
+   must accept the RSA prompt; `offline` means wait. If several are attached,
+   pass `-s <serial>` to every command.
+2. Build a **release** APK so it matches the installed signing key:
+   `./gradlew :app:assembleRelease` → `app/build/outputs/apk/release/app-release.apk`.
+   (Release signing reads `android/keystore.properties`, which is gitignored —
+   never read it aloud, echo it, or commit it.)
+3. The installed copy can be updated **in place only if the applicationId and
+   signing key match**. The Play/debug/release keys are all different. Check with
+   `adb shell pm list packages | grep <applicationId>`; if the app is present
+   from the same key, `adb install -r <apk>` succeeds. A signature mismatch
+   forces an uninstall first, which **wipes `SharedPreferences` (all progress and
+   times)** — prefer keeping one key.
+4. Launch it. The namespace is `.app` while the applicationId is not, so the
+   launcher class is `io.github.cuso4deposit.regexcrossword.app.MainActivity`
+   (explicit `am start -n <applicationId>/.MainActivity` fails). Resolve the
+   real one when unsure:
+   `adb shell cmd package resolve-activity --brief <applicationId>`.
+5. Verify visually: `adb exec-out screencap -p > /tmp/shot.png`. Confirm the app
+   is actually foreground with `adb shell dumpsys activity activities | grep -i
+resumed`.
+
+Do this without asking only when the user's request implies on-device checking;
+otherwise offer. Never hardcode a device serial into the repo.
+
 ## Milestones / next work
 
 1. Port `_generate_constructive` + CPython `random.Random` (MT19937,
@@ -200,7 +230,7 @@ repo):
 nixpkgs#libdrm` gives a `-bin` output; use `nixpkgs#libdrm^out` for the lib.
 4. Boot windowed with `-gpu swiftshader_indirect`, wait on
    `adb shell getprop sys.boot_completed`, `adb install -r`, then
-   `am start -n io.github.cuso4deposit.regexcrossword/.MainActivity` and
+   `am start -n io.github.cuso4deposit.regexcrossword/.app.MainActivity` and
    `adb exec-out screencap -p` for screenshots.
 5. Stop with `adb emu kill` or by closing the window.
 
