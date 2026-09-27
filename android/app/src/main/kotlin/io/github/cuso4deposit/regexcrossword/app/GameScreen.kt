@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -402,7 +403,7 @@ private fun GameContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(112.dp),
+                    .height(if (puzzle.geometry.kind == "hex") 176.dp else 128.dp),
             ) {
                 CluePanel(puzzle, selected, result)
             }
@@ -560,39 +561,65 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                 lineResult.ok -> "\u2713"
                 else -> "\u2717"
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(FamilyColors.label(line.family)),
-                    contentAlignment = Alignment.Center,
-                ) {
+            val markColor = when {
+                lineResult == null -> MaterialTheme.colorScheme.onSurfaceVariant
+                lineResult.ok -> FamilyColors.label(line.family)
+                lineResult.complete -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Column(modifier = Modifier.padding(vertical = 3.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(FamilyColors.label(line.family)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = line.family.uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
                     Text(
-                        text = line.family.uppercase(),
-                        color = Color.White,
+                        text = directionSymbol(kind, line.family),
+                        color = FamilyColors.label(line.family),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = clue,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (mark.isNotEmpty()) {
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = mark,
+                            color = markColor,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+                val word = lineResult?.word
+                if (!word.isNullOrEmpty()) {
+                    Text(
+                        text = word,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                        ),
+                        color = FamilyColors.label(line.family),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 32.dp, top = 1.dp),
                     )
                 }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = directionSymbol(kind, line.family),
-                    color = FamilyColors.label(line.family),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = clue,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "  $mark ${lineResult?.word ?: ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
             }
         }
         Text(
