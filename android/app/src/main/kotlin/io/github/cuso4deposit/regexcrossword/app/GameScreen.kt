@@ -27,6 +27,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -187,9 +191,9 @@ private fun GameContent(
     var confirmClear by remember { mutableStateOf(false) }
     var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
     var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
-    var showSolved by remember(key) { mutableStateOf(false) }
     var elapsed by remember(key) { mutableStateOf(store.elapsedSeconds(id)) }
     var timerRunning by remember(key) { mutableStateOf(true) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     data class Snapshot(
         val grid: Map<Cell, Char>,
@@ -264,7 +268,12 @@ private fun GameContent(
             solvedNow = true
             if (!solvedNotified) {
                 solvedNotified = true
-                showSolved = true
+                val outcome = snackbarHostState.showSnackbar(
+                    message = "Solved! Every line matches.",
+                    actionLabel = "Next level",
+                    duration = SnackbarDuration.Long,
+                )
+                if (outcome == SnackbarResult.ActionPerformed) onNextLevel()
             }
         }
     }
@@ -395,6 +404,7 @@ private fun GameContent(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -511,29 +521,6 @@ private fun GameContent(
         )
     }
 
-    if (showSolved) {
-        AlertDialog(
-            onDismissRequest = { showSolved = false },
-            title = { Text("Solved!") },
-            text = { Text("Every line matches. Well done.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSolved = false
-                        onNextLevel()
-                    },
-                ) { Text("Next level") }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showSolved = false
-                        onBack()
-                    },
-                ) { Text("Back to levels") }
-            },
-        )
-    }
 }
 
 @Composable
