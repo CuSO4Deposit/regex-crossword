@@ -66,6 +66,14 @@ android {
         buildConfig = true
     }
 
+    // Do not embed Google Play's encrypted dependency-metadata block: it is
+    // nondeterministic (breaks whole-APK reproducibility) and irrelevant for an
+    // offline, F-Droid-distributed app.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
