@@ -38,14 +38,9 @@ fun HexregexApp() {
             onAbout = { screen = Screen.About },
         )
 
-        Screen.Tutorial -> InfoScreen("How to play", TUTORIAL_TEXT, onBack = { goHome() })
-        Screen.License -> InfoScreen("License", LICENSE_TEXT, onBack = { goHome() })
-        Screen.About -> InfoScreen(
-            "About",
-            ABOUT_TEXT,
-            onBack = { goHome() },
-            link = "https://github.com/CuSO4Deposit",
-        )
+        Screen.Tutorial -> InfoScreen("How to play", TUTORIAL_BLOCKS, onBack = { goHome() })
+        Screen.License -> InfoScreen("License", LICENSE_BLOCKS, onBack = { goHome() })
+        Screen.About -> InfoScreen("About", ABOUT_BLOCKS, onBack = { goHome() })
 
         is Screen.Levels -> {
             BackHandler { goHome() }
