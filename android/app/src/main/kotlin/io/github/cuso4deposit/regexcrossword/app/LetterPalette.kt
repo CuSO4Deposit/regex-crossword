@@ -28,8 +28,10 @@ fun LetterPalette(
                 Text(letter.toString())
             }
         }
-        OutlinedButton(onClick = onClear) {
-            Text("\u232B")
+        Tip("Delete \u2014 clear the selected cell") {
+            OutlinedButton(onClick = onClear) {
+                Text("\u232B")
+            }
         }
     }
 }

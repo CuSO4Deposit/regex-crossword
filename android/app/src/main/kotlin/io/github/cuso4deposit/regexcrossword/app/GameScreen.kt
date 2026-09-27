@@ -367,37 +367,48 @@ private fun GameContent(
                     }
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                    Tip("Back to levels") {
+                        TextButton(onClick = onBack) {
+                            Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                        }
                     }
                 },
                 actions = {
-                    TextButton(onClick = { undo() }, enabled = undoStack.isNotEmpty()) {
-                        Text("\u21B6", style = MaterialTheme.typography.titleLarge)
-                    }
-                    TextButton(onClick = { redo() }, enabled = redoStack.isNotEmpty()) {
-                        Text("\u21B7", style = MaterialTheme.typography.titleLarge)
-                    }
-                    Box {
-                        TextButton(onClick = { menuOpen = true }) {
-                            Text("\u22EE", style = MaterialTheme.typography.titleLarge)
+                    Tip("Undo") {
+                        TextButton(onClick = { undo() }, enabled = undoStack.isNotEmpty()) {
+                            Text("\u21B6", style = MaterialTheme.typography.titleLarge)
                         }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Solve (fill a solution)") },
-                                onClick = {
-                                    menuOpen = false
-                                    confirmSolve = true
-                                },
-                            )
-                            if (solvedNow) {
+                    }
+                    Tip("Redo") {
+                        TextButton(onClick = { redo() }, enabled = redoStack.isNotEmpty()) {
+                            Text("\u21B7", style = MaterialTheme.typography.titleLarge)
+                        }
+                    }
+                    Tip("Menu") {
+                        Box {
+                            TextButton(onClick = { menuOpen = true }) {
+                                Text("\u22EE", style = MaterialTheme.typography.titleLarge)
+                            }
+                            DropdownMenu(
+                                expanded = menuOpen,
+                                onDismissRequest = { menuOpen = false },
+                            ) {
                                 DropdownMenuItem(
-                                    text = { Text("Load saved solution") },
+                                    text = { Text("Solve (fill a solution)") },
                                     onClick = {
                                         menuOpen = false
-                                        loadSavedSolution()
+                                        confirmSolve = true
                                     },
                                 )
+                                if (solvedNow) {
+                                    DropdownMenuItem(
+                                        text = { Text("Load saved solution") },
+                                        onClick = {
+                                            menuOpen = false
+                                            loadSavedSolution()
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -465,16 +476,26 @@ private fun GameContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedButton(onClick = { hint() }) { Text("Hint") }
-                OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
-                if (notesMode) {
-                    Button(onClick = { notesMode = false }) { Text("Notes on") }
-                } else {
-                    OutlinedButton(onClick = { notesMode = true }) { Text("Notes") }
+                Tip("Reveal one cell that fits what you have") {
+                    OutlinedButton(onClick = { hint() }) { Text("Hint") }
                 }
-                OutlinedButton(
-                    onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
-                ) { Text("Clear") }
+                Tip("Fill cells whose letter a clue writes down") {
+                    OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
+                }
+                if (notesMode) {
+                    Tip("Pencil marks on \u2014 tap to turn off") {
+                        Button(onClick = { notesMode = false }) { Text("Notes on") }
+                    }
+                } else {
+                    Tip("Pencil marks \u2014 tap letters to add or remove candidates") {
+                        OutlinedButton(onClick = { notesMode = true }) { Text("Notes") }
+                    }
+                }
+                Tip("Erase every letter and note") {
+                    OutlinedButton(
+                        onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
+                    ) { Text("Clear") }
+                }
             }
         }
     }
