@@ -22,10 +22,17 @@ class PuzzleStore(private val context: Context) {
         val loaded = try {
             val text = context.assets.open("hard_bank.json").bufferedReader().readText()
             val root = MiniJson.parseObject(text)
-            bankBase = (root["base"] as? Number)?.toInt() ?: 3_000_000
-            (root["puzzles"] as? List<*>)
-                ?.mapNotNull { it as? Map<String, Any?> }
-                ?: emptyList()
+            val version = (root["version"] as? Number)?.toInt()
+            if (version != GENERATOR_VERSION) {
+                // A stale bank must never be served: progress keys and puzzles
+                // are keyed by GENERATOR_VERSION.
+                emptyList()
+            } else {
+                bankBase = (root["base"] as? Number)?.toInt() ?: 3_000_000
+                (root["puzzles"] as? List<*>)
+                    ?.mapNotNull { it as? Map<String, Any?> }
+                    ?: emptyList()
+            }
         } catch (_: Exception) {
             emptyList()
         }
@@ -36,7 +43,12 @@ class PuzzleStore(private val context: Context) {
     private fun bankPuzzle(seed: Int): Puzzle? {
         val list = bank()
         val index = seed - bankBase
-        return if (index in list.indices) Puzzle.fromMap(list[index]) else null
+        if (index !in list.indices) return null
+        return try {
+            Puzzle.fromMap(list[index])
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun cacheFile(seed: Int) = File(context.filesDir, "hard/$seed.json")

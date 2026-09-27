@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -66,6 +67,7 @@ import io.github.cuso4deposit.regexcrossword.engine.SolverLimitException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Reading-direction arrow; hex X reads bottom-to-top, rect X top-to-bottom. */
@@ -83,14 +85,19 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
     val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
     val key = "${id.version}/${id.difficulty.name}/${id.seed}"
 
-    val preloaded = remember(key) { puzzleStore.loadOrNull(id) }
-    var puzzle by remember(key) { mutableStateOf(preloaded) }
-    LaunchedEffect(key) {
-        if (puzzle == null) {
-            val generated = withContext(Dispatchers.Default) { generatePuzzle(id) }
-            puzzleStore.savePuzzle(id.seed, generated)
-            puzzle = generated
+    var puzzle by remember(key) { mutableStateOf<Puzzle?>(null) }
+    var loadError by remember(key) { mutableStateOf(false) }
+    var retry by remember(key) { mutableStateOf(0) }
+    LaunchedEffect(key, retry) {
+        loadError = false
+        val result = runCatching {
+            withContext(Dispatchers.IO) { puzzleStore.loadOrNull(id) }
+                ?: withContext(Dispatchers.Default) { generatePuzzle(id) }
+                    .also { generated ->
+                        withContext(Dispatchers.IO) { puzzleStore.savePuzzle(id.seed, generated) }
+                    }
         }
+        result.onSuccess { puzzle = it }.onFailure { loadError = true }
     }
 
     // Keep a buffer of ~50 unsolved unique puzzles ahead while playing HARD.
@@ -102,9 +109,12 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
             val nextLevel = level + offset
             val nextId = PuzzleId(id.version, id.difficulty, seedFor(id.difficulty, nextLevel))
             if (!store.isSolved(nextId)) {
-                if (!puzzleStore.has(nextId.seed)) {
-                    val generated = withContext(Dispatchers.Default) { generatePuzzle(nextId) }
-                    puzzleStore.savePuzzle(nextId.seed, generated)
+                val available = withContext(Dispatchers.IO) { puzzleStore.has(nextId.seed) }
+                if (!available) {
+                    val generated = runCatching {
+                        withContext(Dispatchers.Default) { generatePuzzle(nextId) }
+                    }.getOrNull() ?: break
+                    withContext(Dispatchers.IO) { puzzleStore.savePuzzle(nextId.seed, generated) }
                 }
                 unsolved++
             }
@@ -113,11 +123,11 @@ fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
     }
 
     val loaded = puzzle
-    if (loaded == null) {
-        GeneratingScreen(id, onBack)
-        return
+    when {
+        loaded != null -> GameContent(id, loaded, onBack, onNextLevel)
+        loadError -> GenerationErrorScreen(id, onRetry = { retry++ }, onBack = onBack)
+        else -> GeneratingScreen(id, onBack)
     }
-    GameContent(id, loaded, onBack, onNextLevel)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -156,6 +166,46 @@ private fun GeneratingScreen(id: PuzzleId, onBack: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GenerationErrorScreen(id: PuzzleId, onRetry: () -> Unit, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("${id.difficulty.label} \u00B7 Level ${levelOf(id.difficulty, id.seed) + 1}")
+                },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text("Couldn't prepare this puzzle.", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Something went wrong loading or generating it.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = onRetry) { Text("Try again") }
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = onBack) { Text("Back to levels") }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun GameContent(
@@ -186,6 +236,8 @@ private fun GameContent(
     }
     var notesMode by remember(key) { mutableStateOf(false) }
     var message by remember(key) { mutableStateOf<String?>(null) }
+    var busy by remember(key) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     var menuOpen by remember { mutableStateOf(false) }
     var confirmSolve by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
@@ -284,45 +336,57 @@ private fun GameContent(
             ?: puzzle.geometry.cells().firstOrNull { grid[it] == null }
 
     fun hint() {
+        if (busy) return
         val target = firstEmpty()
         if (target == null) {
             message = "Every cell is filled."
             return
         }
-        val completion = try {
-            solver.solveWith(grid.toMap())
-        } catch (_: SolverLimitException) {
-            message = "Solver gave up on this clue set."
-            return
+        busy = true
+        scope.launch {
+            val completion = try {
+                withContext(Dispatchers.Default) { solver.solveWith(grid.toMap()) }
+            } catch (_: SolverLimitException) {
+                busy = false
+                message = "Solver gave up on this clue set."
+                return@launch
+            }
+            busy = false
+            if (completion == null) {
+                message = "Your entries are inconsistent \u2014 no completion exists."
+                return@launch
+            }
+            pushUndo()
+            grid[target] = completion.getValue(target)
+            notes.remove(target)
+            selected = target
+            message = "Hint: revealed one cell consistent with your grid."
         }
-        if (completion == null) {
-            message = "Your entries are inconsistent \u2014 no completion exists."
-            return
-        }
-        pushUndo()
-        grid[target] = completion.getValue(target)
-        notes.remove(target)
-        selected = target
-        message = "Hint: revealed one cell consistent with your grid."
     }
 
     fun solveAll() {
-        val completion = try {
-            solver.solveWith(grid.toMap())
-        } catch (_: SolverLimitException) {
-            message = "Solver gave up on this clue set."
-            return
+        if (busy) return
+        busy = true
+        scope.launch {
+            val completion = try {
+                withContext(Dispatchers.Default) { solver.solveWith(grid.toMap()) }
+            } catch (_: SolverLimitException) {
+                busy = false
+                message = "Solver gave up on this clue set."
+                return@launch
+            }
+            busy = false
+            if (completion == null) {
+                message = "Your entries are inconsistent \u2014 clear or fix them first."
+                return@launch
+            }
+            pushUndo()
+            grid.clear()
+            grid.putAll(completion)
+            notes.clear()
+            selected = null
+            message = "Filled one valid solution."
         }
-        if (completion == null) {
-            message = "Your entries are inconsistent \u2014 clear or fix them first."
-            return
-        }
-        pushUndo()
-        grid.clear()
-        grid.putAll(completion)
-        notes.clear()
-        selected = null
-        message = "Filled one valid solution."
     }
 
     fun fillGivens() {
@@ -395,6 +459,7 @@ private fun GameContent(
                             ) {
                                 DropdownMenuItem(
                                     text = { Text("Solve (fill a solution)") },
+                                    enabled = !busy,
                                     onClick = {
                                         menuOpen = false
                                         confirmSolve = true
@@ -477,7 +542,7 @@ private fun GameContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Tip("Reveal one cell that fits what you have") {
-                    OutlinedButton(onClick = { hint() }) { Text("Hint") }
+                    OutlinedButton(onClick = { hint() }, enabled = !busy) { Text("Hint") }
                 }
                 Tip("Fill cells whose letter a clue writes down") {
                     OutlinedButton(onClick = { fillGivens() }) { Text("Givens") }
