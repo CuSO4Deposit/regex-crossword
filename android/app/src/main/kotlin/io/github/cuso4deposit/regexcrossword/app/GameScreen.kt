@@ -1,6 +1,7 @@
 package io.github.cuso4deposit.regexcrossword.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -549,7 +552,7 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
         return
     }
     val geometry = puzzle.geometry
-    Column {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         for (line in geometry.linesForCell(selected)) {
             val clue = puzzle.clue(line.family, line.index)
             val lineResult = result.lines.firstOrNull {
@@ -568,7 +571,7 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
             Column(modifier = Modifier.padding(vertical = 3.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.Top) {
                     Box(
                         modifier = Modifier
                             .size(24.dp)
@@ -594,8 +597,6 @@ private fun CluePanel(puzzle: Puzzle, selected: Cell?, result: JudgeResult) {
                     Text(
                         text = clue,
                         style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                     if (mark.isNotEmpty()) {
