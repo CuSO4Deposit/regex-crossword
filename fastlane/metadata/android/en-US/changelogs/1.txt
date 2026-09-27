@@ -1,0 +1,7 @@
+First public release.
+
+* Easy (rectangle) and Medium/Hard (hexagon) difficulties.
+* Puzzles generated on device from a seed; Hard levels are pre-generated with a
+  solver so their answer is unique.
+* Notes, per-cell hint, givens, undo/redo and a per-level timer.
+* Progress saved automatically. No accounts, ads, network access or permissions.

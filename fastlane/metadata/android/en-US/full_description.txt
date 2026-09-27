@@ -1,0 +1,27 @@
+Regex Crossword is an offline puzzle game. Every line of the grid is a regular
+expression; fill the cells so that each line, read in its own direction,
+matches its clue exactly (a whole-string match).
+
+Features:
+
+* Three difficulties: Easy (rectangle 5x5), Medium and Hard (hexagon). Puzzles
+  are generated on your device from a seed, so the number of levels is
+  unlimited.
+* The hexagonal board has three colour-coded reading directions (X, Y, Z); the
+  rectangle board uses rows and columns. Each clue shows its reading direction
+  and start cell.
+* Tap a cell and use the on-screen keyboard. Pencil-mark notes, per-cell hints,
+  "givens" (letters a clue writes down literally), undo/redo, and a per-level
+  timer.
+* Progress is saved automatically for every level.
+
+Hard levels are pre-generated with a solver so that their answer is unique.
+
+No accounts. No ads. No network access. No permissions.
+
+Regex Crossword is free software under the MIT licence. The hexagonal "A
+Regular Crossword" form was popularised by Dan Gulotta (based on an idea by
+Palmer Mebane) in MIT Mystery Hunt 2013. This app is an independent
+implementation and includes neither the original puzzle nor its text.
+
+Source code: https://github.com/CuSO4Deposit/regex-crossword
