@@ -81,6 +81,11 @@ hexregex gen --edge 5 --difficulty medium --seed 1000 --no-unique -o android/fix
 hexregex gen --edge 5 --difficulty hard   --seed 1000 --no-unique -o android/fixtures/hex_hard_1000.json
 ```
 
+The committed fixtures are **frozen at the generator version they were made
+with**; after generator changes these commands may no longer reproduce them
+(`rect_easy_1000` still does; medium/hard diverged). Never regenerate a fixture
+without updating its byte-parity expectation in the same commit.
+
 Then regenerate the two test-only artifacts with the Python modules: a
 **known single-cell mutation that breaks a line** and an **alternate valid
 solution** found by the solver (`Solver.from_puzzle(...).solve(find_all=False)`,
@@ -92,7 +97,7 @@ differs from `solution`). The pattern:
 # assert re.fullmatch(clue, word) for every line of the alt grid
 ```
 
-## Acceptance tests (`./gradlew -p engine test`, 16 tests)
+## Acceptance tests (`./gradlew -p engine test`, 35 tests)
 
 Must keep passing:
 

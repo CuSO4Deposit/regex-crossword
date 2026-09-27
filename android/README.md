@@ -1,9 +1,10 @@
 # Regex Crossword — Android app (Kotlin + Jetpack Compose)
 
-A phone app for the `hexregex` regular crosswords. This is the **walking
-skeleton**: it parses CLI-generated puzzle JSON, draws the hexagon/rectangle,
-lets you fill cells, and judges your grid **line by line** exactly the way the
-Python tool does.
+The Android app for the `hexregex` regular crosswords (version 0.1.0). It draws
+the hexagon/rectangle, lets you fill cells, and judges your grid **line by line**
+exactly the way the Python tool does. Puzzles are generated on device from a
+seed. Both the reference implementation and this app are MIT-licensed (see
+[`../LICENSE`](../LICENSE)).
 
 Target: **Android only**, F-Droid-friendly (pure Gradle + AndroidX/Compose, no
 proprietary dependencies, no network permission).
@@ -48,7 +49,7 @@ Android SDK (platform 35, build-tools 35.0.0) and `local.properties`
 (`sdk.dir=...`):
 
 ```bash
-./gradlew :engine:test          # pure-JVM engine tests, no SDK needed
+./gradlew -p engine test        # pure-JVM engine tests, no Android SDK needed
 ./gradlew :app:assembleDebug    # APK -> app/build/outputs/apk/debug/
 ```
 
@@ -80,8 +81,8 @@ groups, single-char alternation → class).
 `app/src/main/assets/hard_bank.json` (`seed = 3_000_000 + i`), regenerated with:
 
 ```bash
-./gradlew -p android/engine generateHardBank \
-    -Pout=android/app/src/main/assets/hard_bank.json -Pcount=50
+./gradlew -p engine generateHardBank \
+    -Pout=app/src/main/assets/hard_bank.json -Pcount=50
 ```
 
 On device, `PuzzleStore` serves a hard level from the bank, else a local file
@@ -119,15 +120,12 @@ level↔seed bijection (`seedFor` / `levelOf`, one per difficulty). Progress
 bases: old saves then stay under their own version instead of silently pointing
 at a different puzzle.
 
-The engine's own acceptance fixtures (`android/fixtures/*`, `generated/*`) are
-independent of the app mapping and keep their original seeds; regenerate them
-with:
-
-```bash
-hexregex gen --edge 5 --difficulty easy   --seed 1000 --no-unique -o android/fixtures/rect_easy_1000.json
-hexregex gen --edge 5 --difficulty medium --seed 1000 --no-unique -o android/fixtures/hex_medium_1000.json
-hexregex gen --edge 5 --difficulty hard   --seed 1000 --no-unique -o android/fixtures/hex_hard_1000.json
-```
+The engine's acceptance fixtures (`android/fixtures/*`, and the test-only
+`generated/*` under `engine/src/test/resources/`) are frozen at the generator
+version they were produced with. The exact seeds and flags are in the engine
+tests; re-running the CLI with current defaults may legitimately produce
+different output, so regenerate a fixture only together with its byte-parity
+expectation.
 
 ## Judging contract
 
@@ -142,7 +140,7 @@ Only the cross-platform regex subset the generator emits is used: literals,
 
 ## Acceptance tests (all passing)
 
-`./gradlew -p engine test` covers 30 tests, in particular:
+`./gradlew -p engine test` covers 35 tests, in particular:
 
 - **CLI byte parity of the serialiser** — each fixture parsed and re-serialised
   by `PyJson` equals the CLI output byte for byte.
@@ -164,12 +162,13 @@ Only the cross-platform regex subset the generator emits is used: literals,
   `Generator.constructive` reproduces `hexregex gen --difficulty {easy,medium,hard}
 --edge 5 --seed N --no-unique` byte for byte for nine seeds.
 
-The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
+The alternate grids live in `engine/src/test/resources/*.alt.json` (used only by
+the tests).
 
 ## F-Droid notes
 
-- Licence: the `hexregex` package is MIT; keep the app under a compatible
-  FOSS licence (e.g. MIT or GPL-3.0) so F-Droid can build it.
+- Licence: the reference implementation and the app are both MIT (see
+  [`../LICENSE`](../LICENSE)), so F-Droid can build the app.
 - F-Droid builds from source: no prebuilt binaries, no Play Services, no
   tracking. The app declares **no permissions**, which is ideal.
 - Provide `fastlane/metadata/android/<locale>/` (title, short/full description,
@@ -179,33 +178,24 @@ The alternate grids live in `fixtures/*.alt.json` (used only by the tests).
 - Repro builds are easier if you pin dependency versions (done here via the
   Compose BOM and explicit versions).
 
-## Next steps
+## Status
 
-The app opens on a **level select** screen (difficulty tabs, an infinite level
-grid, ticks on solved levels) and only enters the puzzle after a level is
-chosen. Each line family is colour-coded (X blue / Y green / Z red) in both
-the clue panel and the board, with an arrow for the reading direction and a
-ring on the cell where reading starts. Completion status and the winning grid
-are stored per level, so a solved level can be reopened or its solution
-reloaded from the overflow menu. Lines that are full but wrong are outlined in
-red automatically (no Check button); the family colours stay visible.
-
-The solver (`regex_engine.py` + `solver.py`), the constructive generator
-(`_generate_constructive`, byte-identical to the CLI) and the **unique**
-generator (solver feedback, made total so any seed yields a unique puzzle) are
-ported; `PyRandom` matches CPython, and difficulty scoring
-(`clue_style`/`measure`) is ported too. Progress is written to disk on every
-change with a synchronous commit plus an `ON_STOP` flush; notes/candidate mode
-and a **Givens** button (fill the letters a clue literally writes down at a
-fixed position — a cheap AST scan, no search) are available.
+Implemented: level select (difficulty tabs, infinite level grid, ticks on solved
+levels), the board with family colours / reading arrows / start rings, a clue
+panel showing each line's full (wrapping) regex and the filled word, notes,
+Hint, Givens, Undo/Redo, a per-level timer, a Snackbar on solve with "Next
+level", progress persistence (grid, notes, selection, solved grid, elapsed
+time), and the How-to-play / License / About pages. Lines that are full but
+wrong are outlined in red automatically.
 
 Levels follow `level_id -> seed = seedBase + level_id -> Generator`. EASY and
 MEDIUM are constructive (instant); HARD loads unique puzzles from the bundled
-bank and generates more in the background.
+bank and generates more in the background. Hint/Solve run off the main thread.
 
-1. Share by level id / daily challenge; per-line live feedback while typing.
-2. Move Hint/Solve off the main thread.
-3. Optional: candidate auto-pruning from solver domains, progress export.
+Roadmap:
+
+1. Share a level by id; daily challenge.
+2. Optional: candidate auto-pruning from solver domains, progress export.
 
 Bump `GENERATOR_VERSION` (in `Levels.kt`) whenever the generator, the presets or
 the seed bases change.

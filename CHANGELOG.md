@@ -4,8 +4,9 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the Android app follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-The `hexregex` Python library is versioned separately (its current release is
-`0.5.0`).
+The `hexregex` Python package is a reference implementation used to design and
+test the algorithms; it is not published and carries its own version number
+(`0.5.0`), independent of the app.
 
 ## [Unreleased]
 
