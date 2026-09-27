@@ -14,8 +14,8 @@ android {
         applicationId = "io.github.cuso4deposit.regexcrossword"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {
@@ -37,8 +37,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Reproducible builds (needed for F-Droid to use our signature):
+            // keep R8/resource shrinking off so the output is bit-for-bit
+            // reproducible across build environments.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

@@ -10,6 +10,18 @@ test the algorithms; it is not published and carries its own version number
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-27
+
+First release prepared for F-Droid.
+
+### Changed
+
+- Release builds are now **reproducible**: R8 code shrinking and resource
+  shrinking are disabled so the output is bit-for-bit reproducible and F-Droid
+  can ship the developer's own signature. The APK is larger as a result; there
+  is no functional change.
+- User-facing text is provided through Android string resources.
+
 ## [0.1.0] - 2026-09-27
 
 First public release of the Android app.
@@ -29,8 +41,8 @@ First public release of the Android app.
   automatically per level.
 - Hard levels come from a bundled bank of puzzles pre-generated with the solver
   to guarantee a unique solution, with background top-up on device.
-- `hexregex` Python CLI with `gen`, `gen-batch`, `solve`, `verify`, `render`
-  and `original` subcommands.
+- `hexregex` Python CLI with `gen`, `gen-batch`, `solve`, `verify` and `render`
+  subcommands.
 - Byte-for-byte parity between the Python generator and the Kotlin engine,
   enforced by tests.
 
@@ -40,5 +52,6 @@ First public release of the Android app.
   (based on an idea by Palmer Mebane) in MIT Mystery Hunt 2013. See the
   [original puzzle](https://puzzles.mit.edu/2013/coinheist.com/rubik/a_regular_crossword/).
 
-[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.0
 [0.1.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.1.0
