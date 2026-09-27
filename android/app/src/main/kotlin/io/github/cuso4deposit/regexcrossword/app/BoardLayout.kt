@@ -91,18 +91,21 @@ class BoardLayout private constructor(
             val cellW = sqrt(3f) * radius
             val cellH = 1.5f * radius
 
+            val boardW = widthCells * cellW + 2 * padding
+            val boardH = ((rows - 1) * cellH + 2 * radius) + 2 * padding
+            val originX = (available.width - boardW) / 2f
+            val originY = (available.height - boardH) / 2f
+
             val centers = HashMap<Cell, Offset>()
             for (r in 0 until rows) {
                 val offset = (widthCells - geometry.rowSize(r)) / 2f
                 for (c in 0 until geometry.rowSize(r)) {
                     centers[Cell(r, c)] = Offset(
-                        padding + (offset + c + 0.5f) * cellW,
-                        padding + radius + r * cellH,
+                        originX + padding + (offset + c + 0.5f) * cellW,
+                        originY + padding + radius + r * cellH,
                     )
                 }
             }
-            val boardW = widthCells * cellW + 2 * padding
-            val boardH = ((rows - 1) * cellH + 2 * radius) + 2 * padding
             return BoardLayout(
                 isHex = true,
                 centers = centers,
@@ -122,19 +125,24 @@ class BoardLayout private constructor(
             val innerH = (available.height - 2 * padding).coerceAtLeast(1f)
             val cell = min(innerW / cols, innerH / rows)
 
+            val boardW = cols * cell + 2 * padding
+            val boardH = rows * cell + 2 * padding
+            val originX = (available.width - boardW) / 2f
+            val originY = (available.height - boardH) / 2f
+
             val centers = HashMap<Cell, Offset>()
             for (r in 0 until rows) {
                 for (c in 0 until geometry.rowSize(r)) {
                     centers[Cell(r, c)] = Offset(
-                        padding + (c + 0.5f) * cell,
-                        padding + (r + 0.5f) * cell,
+                        originX + padding + (c + 0.5f) * cell,
+                        originY + padding + (r + 0.5f) * cell,
                     )
                 }
             }
             return BoardLayout(
                 isHex = false,
                 centers = centers,
-                size = Size(cols * cell + 2 * padding, rows * cell + 2 * padding),
+                size = Size(boardW, boardH),
                 textSize = cell * 0.6f,
                 radius = cell / 2f,
                 cellW = cell,
