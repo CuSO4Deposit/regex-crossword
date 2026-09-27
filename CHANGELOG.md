@@ -10,6 +10,13 @@ test the algorithms; it is not published and carries its own version number
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-27
+
+### Changed
+
+- Re-enabled R8 code and resource shrinking: the release APK is small again
+  (~1.2 MB) and still byte-reproducible. This supersedes 0.2.0 for F-Droid.
+
 ## [0.2.0] - 2026-09-27
 
 First release prepared for F-Droid.
@@ -52,6 +59,7 @@ First public release of the Android app.
   (based on an idea by Palmer Mebane) in MIT Mystery Hunt 2013. See the
   [original puzzle](https://puzzles.mit.edu/2013/coinheist.com/rubik/a_regular_crossword/).
 
-[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.1
 [0.2.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.0
 [0.1.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.1.0

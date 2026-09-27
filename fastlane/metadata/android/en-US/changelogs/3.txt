@@ -1,0 +1,9 @@
+Offline regex-crossword puzzles for Android.
+
+* Easy (rectangle 5x5) and Medium / Hard (hexagon) difficulties.
+* Puzzles generated on device from a seed; Hard levels pre-generated with the
+  solver so their answer is unique.
+* Notes, per-cell hint, givens, undo/redo and a per-level timer.
+* Progress saved automatically. No accounts, ads, network access or permissions.
+* Release APK keeps R8 shrinking (smaller download) and is reproducible, so
+  F-Droid ships the developer's own signature.
