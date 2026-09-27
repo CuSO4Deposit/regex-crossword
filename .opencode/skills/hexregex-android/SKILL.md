@@ -115,7 +115,54 @@ Run without an Android SDK. Build the APK separately with
    `L+1..L+3`; cache.
 3. Progress persistence, daily challenge, share by level id.
 
-## Build / tooling notes
+## Expert difficulty: offline constraint-learning (planned)
+
+The constructive/unique generators can produce a **unique** puzzle, but their
+uniqueness comes from _pinning cells_: on edge 5, ~34/61 cells are decidable
+from a single clue (the opaque HARD settings only hide some of them). Coaxing
+them into MIT-style slack either loses uniqueness, needs 17-34 prefilled
+anchors, or costs minutes per puzzle (edge 7 ≈ 10 min). So a fourth tier,
+**Expert**, is produced **offline** by a different method and shipped as a
+curated bank (like HARD), never generated on device.
+
+`learn(seed)` — the constraint-learning algorithm (Python prototype; to port):
+
+1. Pick a random truth grid.
+2. Start each line as a fixed-length sequence of full-alphabet classes
+   (`.....`): position-addressable, zero information.
+3. Repeat: solve up to `k` solutions; if exactly one, stop. Otherwise, for every
+   cell where the solutions disagree, **exclude the wrong letters** (those not
+   equal to the truth) from that cell's class in one of its lines, preferring to
+   keep the class size `>= 2` so **no cell is ever pinned by a single clue**.
+4. It converges to clues that pin no cell individually, yet whose cross-line
+   intersections force a unique solution.
+
+Measured (edge 5, seed 3000000, `k=6`): 146 iterations, ~48 s, unique,
+**0/61 single-clue-forced** cells.
+
+Open work before porting:
+
+- Fairness: the greedy currently picks each cell's _first_ line (always X), so
+  constraints pile onto X and Z lines stay empty. Rotate over a cell's lines.
+- Clue quality: render short classes as `[^...]`, keep lines varied, and
+  consider mixing in `.*`/optional structure so the style looks MIT-like.
+- Port to `:engine` and add a `learnBank` tool; regenerate a bank of Expert
+  levels. Add a parity/uniqueness test.
+
+## Adding a difficulty across app versions (migration)
+
+Difficulty identity is `(GENERATOR_VERSION, difficulty, seed)` and progress is
+keyed by it, so adding a tier must not disturb existing saves:
+
+- Add the new enum value with its own `seedBase` and a `bank` asset; keep the
+  existing tiers' `seedBase`, presets and `GENERATOR_VERSION` **unchanged**.
+- Bump `GENERATOR_VERSION` only when an _existing_ tier's generation changes;
+  that intentionally orphans only that tier's old keys.
+- New tiers ship their own bank; old progress under `gv<v>_<old>_<seed>` is left
+  intact and keeps loading.
+- If a new version must move/rename keys, write an explicit, idempotent
+  migration on first launch (read old keys, write new, keep both until done).
+- Never reuse a level's identity for different content.
 
 - Gradle wrapper 8.11.1, AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01,
   compileSdk 35, minSdk 24.
