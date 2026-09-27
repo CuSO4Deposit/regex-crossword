@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ import io.github.cuso4deposit.regexcrossword.engine.Puzzle
 import io.github.cuso4deposit.regexcrossword.engine.Solver
 import io.github.cuso4deposit.regexcrossword.engine.SolverLimitException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
@@ -182,6 +184,8 @@ private fun GameContent(
     var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
     var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
     var showSolved by remember(key) { mutableStateOf(false) }
+    var elapsed by remember(key) { mutableStateOf(store.elapsedSeconds(id)) }
+    var timerRunning by remember(key) { mutableStateOf(true) }
 
     data class Snapshot(
         val grid: Map<Cell, Char>,
@@ -230,6 +234,21 @@ private fun GameContent(
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         store.save(id, grid.toMap(), notes.toMap(), selected)
+    }
+
+    LaunchedEffect(key, timerRunning, solvedNow) {
+        while (timerRunning && !solvedNow) {
+            delay(1000)
+            elapsed += 1
+        }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { timerRunning = true }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        timerRunning = false
+        store.saveElapsedSeconds(id, elapsed)
+    }
+    DisposableEffect(key) {
+        onDispose { store.saveElapsedSeconds(id, elapsed) }
     }
 
     val result: JudgeResult by remember(puzzle) {
@@ -324,7 +343,16 @@ private fun GameContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${id.difficulty.label} \u00B7 Level ${level + 1}") },
+                title = {
+                    Column {
+                        Text("${id.difficulty.label} \u00B7 Level ${level + 1}")
+                        Text(
+                            formatElapsed(elapsed),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("\u2190", style = MaterialTheme.typography.titleLarge)
@@ -585,4 +613,15 @@ private fun StatusLine(result: JudgeResult, message: String?) {
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(vertical = 4.dp),
     )
+}
+
+private fun formatElapsed(totalSeconds: Long): String {
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%d:%02d".format(minutes, seconds)
+    }
 }

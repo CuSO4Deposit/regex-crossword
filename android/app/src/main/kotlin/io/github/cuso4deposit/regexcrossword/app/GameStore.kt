@@ -44,6 +44,13 @@ class GameStore(context: Context) {
 
     fun isSolved(id: PuzzleId): Boolean = prefs.getBoolean(solvedKey(id), false)
 
+    /** Seconds the player has spent on this puzzle so far. */
+    fun elapsedSeconds(id: PuzzleId): Long = prefs.getLong(timeKey(id), 0L)
+
+    fun saveElapsedSeconds(id: PuzzleId, seconds: Long) {
+        prefs.edit().putLong(timeKey(id), seconds).commit()
+    }
+
     /** The stored winning grid for a solved puzzle, if any. */
     fun solvedGrid(id: PuzzleId): Map<Cell, Char>? =
         prefs.getString(solutionKey(id), null)?.let { decodeGrid(it) }
@@ -94,6 +101,7 @@ class GameStore(context: Context) {
     private fun selectedKey(id: PuzzleId) = "selected_${base(id)}"
     private fun solvedKey(id: PuzzleId) = "solved_${base(id)}"
     private fun solutionKey(id: PuzzleId) = "solution_${base(id)}"
+    private fun timeKey(id: PuzzleId) = "time_${base(id)}"
 
     private fun encodeGrid(grid: Map<Cell, Char>): String =
         grid.entries.joinToString(";") { "${it.key.r},${it.key.c},${it.value}" }
