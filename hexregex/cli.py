@@ -5,8 +5,8 @@ Subcommands
 ``solve``    solve a puzzle JSON (optionally enumerate all / show statistics)
 ``verify``   report whether a puzzle is uniquely solvable and re-check every line
 ``gen``      generate a new puzzle with a controlled difficulty
+``gen-batch``  generate a bank of puzzles in one go
 ``render``   draw a puzzle (and optionally its solution) as an ASCII hexagon
-``original`` solve the built-in MIT Mystery Hunt 2013 puzzle
 
 Run ``hexregex <command> --help`` for the full option list.
 """
@@ -20,7 +20,6 @@ import sys
 from typing import Dict, List, Optional
 
 from . import __version__
-from .data import original_puzzle
 from .generator import DIFFICULTIES, GenConfig, GenerationError, generate
 from .geometry import HexGeometry
 from .solver import DEFAULT_ALPHABET, Solver, SolverError
@@ -40,7 +39,6 @@ EXAMPLES = """examples:
   hexregex gen-batch --difficulty medium --count 50 --edge 5 --seed 0 -o bank.json
   hexregex render puzzle.json --solution
   hexregex render puzzle.json --jimbly-out board.b64
-  hexregex original --show-stats
 """
 
 
@@ -283,22 +281,6 @@ def cmd_gen_batch(args) -> int:
     return 0 if len(puzzles) == args.count else 1
 
 
-def cmd_original(args) -> int:
-    puzzle = original_puzzle()
-    try:
-        solver, (solutions, stats) = _solve(puzzle, args.alphabet, False, 1)
-    except SolverError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
-    if not solutions:
-        print("the built-in puzzle unexpectedly has no solution", file=sys.stderr)
-        return 1
-    print(hex_text(solver.geo, solutions[0]))
-    if args.show_stats:
-        print(json.dumps(stats.to_dict(), indent=2))
-    return 0
-
-
 # ----------------------------------------------------------------------
 # argument parsing
 # ----------------------------------------------------------------------
@@ -404,11 +386,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--jimbly-out", default=None, help="write a jimbly base64 payload")
     add_alphabet(p)
     p.set_defaults(func=cmd_render)
-
-    p = sub.add_parser("original", help="solve the built-in MIT 2013 puzzle")
-    p.add_argument("--show-stats", action="store_true", help="print difficulty statistics")
-    add_alphabet(p)
-    p.set_defaults(func=cmd_original)
 
     return parser
 

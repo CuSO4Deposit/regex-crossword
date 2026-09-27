@@ -10,7 +10,7 @@ three line families (X / Y / Z); the rectangular easy form has two (rows and
 columns).
 
 The tool is pure Python (standard library only, no third-party dependencies)
-and offers six subcommands:
+and offers five subcommands:
 
 ```
 hexregex solve   puzzle.json [--show-stats] [--all] [--alphabet ABC...]
@@ -19,7 +19,6 @@ hexregex gen     --edge 7 --alphabet CDEHIMNORSTUVX... \
                  --difficulty medium --seed 1 --unique -o puzzle.json
 hexregex gen-batch --difficulty medium --count 50 --seed 0 -o bank.json
 hexregex render  puzzle.json [--solution] [--jimbly-out board.b64]
-hexregex original
 ```
 
 ## Coordinate system and reading directions
@@ -275,8 +274,8 @@ row-length-based indentation (`.` for unknown cells).
 ```json
 {
   "edge": 7,
-  "author": "Dan Gulotta",
-  "name": "original",
+  "author": "generated",
+  "name": "example",
   "x": ["... 13 clues ..."],
   "y": ["... 13 clues ..."],
   "z": ["... 13 clues ..."],
@@ -293,7 +292,6 @@ hexregex/
   solver.py         propagation, MRV search, statistics, verification
   difficulty.py     multi-factor difficulty measurement and bands
   generator.py      solution sampling, relaxation operators, difficulty
-  data.py           built-in MIT 2013 puzzle
   cli.py            argparse front end
 tests/
   test_geometry.py  test_regex_engine.py  test_solver.py
@@ -302,10 +300,9 @@ tests/
 
 ## Running the tests
 
-On NixOS the interpreter is available ad hoc:
-
 ```bash
-nix shell nixpkgs#python3 -c "python3 -m unittest discover -s tests -v"
+python3 -m unittest discover -s tests -v
 ```
 
-(Any Python ≥ 3.8 works; the package itself has no dependencies.)
+(Any Python ≥ 3.8 works; the package itself has no dependencies. On NixOS,
+`nix shell nixpkgs#python3 -c "python3 -m unittest discover -s tests -v"`.)

@@ -17,11 +17,29 @@ class CliTests(unittest.TestCase):
             code = main(argv)
         return code, out.getvalue(), err.getvalue()
 
-    def test_original(self):
-        code, out, _err = self._run(["original", "--show-stats"])
-        self.assertEqual(code, 0)
-        self.assertIn("N H P E H A S", out)
-        self.assertIn("difficulty", out)
+    def test_gen_batch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "bank.json")
+            code, _out, err = self._run(
+                [
+                    "gen-batch",
+                    "--difficulty",
+                    "easy",
+                    "--count",
+                    "3",
+                    "--edge",
+                    "3",
+                    "--seed",
+                    "0",
+                    "-o",
+                    path,
+                ]
+            )
+            self.assertEqual(code, 0, msg=err)
+            with open(path, encoding="utf-8") as handle:
+                bank = json.load(handle)
+            self.assertEqual(bank["count"], 3)
+            self.assertEqual(len(bank["puzzles"]), 3)
 
     def test_solve_and_verify_generated(self):
         with tempfile.TemporaryDirectory() as tmp:

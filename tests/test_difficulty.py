@@ -3,9 +3,7 @@
 import unittest
 from types import SimpleNamespace
 
-from hexregex.data import original_puzzle
-from hexregex.difficulty import DEFAULT_WEIGHTS, clue_style, measure
-from hexregex.solver import Solver
+from hexregex.difficulty import clue_style, measure
 
 
 def _stats(**overrides):
@@ -92,14 +90,6 @@ class ScoreTests(unittest.TestCase):
         for key in ("dimension", "opacity", "search", "alphabet", "size", "raw"):
             self.assertIn(key, report.components)
         self.assertGreater(report.components["opacity"], 0.0)
-
-
-class AnchorTests(unittest.TestCase):
-    def test_mit_original_is_hard(self):
-        solver = Solver.from_puzzle(original_puzzle())
-        _solutions, stats = solver.solve(find_all=True, max_solutions=2)
-        self.assertEqual(stats.band, "hard")
-        self.assertGreaterEqual(stats.score, DEFAULT_WEIGHTS.medium_max)
 
 
 if __name__ == "__main__":
