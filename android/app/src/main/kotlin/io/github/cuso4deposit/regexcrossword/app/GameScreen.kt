@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -182,6 +183,45 @@ private fun GameContent(
     var solvedNotified by remember(key) { mutableStateOf(store.isSolved(id)) }
     var showSolved by remember(key) { mutableStateOf(false) }
 
+    data class Snapshot(
+        val grid: Map<Cell, Char>,
+        val notes: Map<Cell, Set<Char>>,
+        val selected: Cell?,
+    )
+
+    val undoStack = remember(key) { mutableStateListOf<Snapshot>() }
+    val redoStack = remember(key) { mutableStateListOf<Snapshot>() }
+
+    fun currentSnapshot() = Snapshot(grid.toMap(), notes.toMap(), selected)
+
+    fun pushUndo() {
+        undoStack.add(currentSnapshot())
+        if (undoStack.size > 200) undoStack.removeAt(0)
+        redoStack.clear()
+    }
+
+    fun restore(snapshot: Snapshot) {
+        grid.clear()
+        grid.putAll(snapshot.grid)
+        notes.clear()
+        notes.putAll(snapshot.notes)
+        selected = snapshot.selected
+    }
+
+    fun undo() {
+        val previous = undoStack.removeLastOrNull() ?: return
+        redoStack.add(currentSnapshot())
+        restore(previous)
+        message = null
+    }
+
+    fun redo() {
+        val next = redoStack.removeLastOrNull() ?: return
+        undoStack.add(currentSnapshot())
+        restore(next)
+        message = null
+    }
+
     LaunchedEffect(id, store) { store.savePosition(id) }
     LaunchedEffect(id, store) {
         snapshotFlow { Triple(grid.toMap(), notes.toMap(), selected) }.collect { (g, n, s) ->
@@ -227,6 +267,7 @@ private fun GameContent(
             message = "Your entries are inconsistent \u2014 no completion exists."
             return
         }
+        pushUndo()
         grid[target] = completion.getValue(target)
         notes.remove(target)
         selected = target
@@ -244,6 +285,7 @@ private fun GameContent(
             message = "Your entries are inconsistent \u2014 clear or fix them first."
             return
         }
+        pushUndo()
         grid.clear()
         grid.putAll(completion)
         notes.clear()
@@ -252,26 +294,26 @@ private fun GameContent(
     }
 
     fun fillGivens() {
-        var filled = 0
-        for ((cell, ch) in solver.givenLetters()) {
-            if (grid[cell] != ch) {
-                grid[cell] = ch
-                notes.remove(cell)
-                filled++
-            }
+        val fills = solver.givenLetters().filter { (cell, ch) -> grid[cell] != ch }
+        if (fills.isEmpty()) {
+            message = "No directly-given letters to fill."
+            return
         }
-        message = if (filled == 0) {
-            "No directly-given letters to fill."
-        } else {
-            "Filled $filled given letter(s)."
+        pushUndo()
+        for ((cell, ch) in fills) {
+            grid[cell] = ch
+            notes.remove(cell)
         }
+        message = "Filled ${fills.size} given letter(s)."
     }
 
-    fun loadSavedSolution() {        val stored = store.solvedGrid(id)
+    fun loadSavedSolution() {
+        val stored = store.solvedGrid(id)
         if (stored == null) {
             message = "No saved solution for this level."
             return
         }
+        pushUndo()
         grid.clear()
         grid.putAll(stored.filterKeys { it in validCells })
         notes.clear()
@@ -289,6 +331,12 @@ private fun GameContent(
                     }
                 },
                 actions = {
+                    TextButton(onClick = { undo() }, enabled = undoStack.isNotEmpty()) {
+                        Text("\u21B6", style = MaterialTheme.typography.titleLarge)
+                    }
+                    TextButton(onClick = { redo() }, enabled = redoStack.isNotEmpty()) {
+                        Text("\u21B7", style = MaterialTheme.typography.titleLarge)
+                    }
                     Box {
                         TextButton(onClick = { menuOpen = true }) {
                             Text("\u22EE", style = MaterialTheme.typography.titleLarge)
@@ -346,6 +394,7 @@ private fun GameContent(
                 alphabet = alphabet,
                 onLetter = { letter ->
                     selected?.let { cell ->
+                        pushUndo()
                         if (notesMode) {
                             val current = notes[cell] ?: emptySet()
                             val updated = if (letter in current) current - letter else current + letter
@@ -359,6 +408,7 @@ private fun GameContent(
                 },
                 onClear = {
                     selected?.let { cell ->
+                        pushUndo()
                         if (notesMode) {
                             notes.remove(cell)
                         } else if (grid.remove(cell) == null) {
@@ -410,11 +460,12 @@ private fun GameContent(
         AlertDialog(
             onDismissRequest = { confirmClear = false },
             title = { Text("Clear?") },
-            text = { Text("Erase every letter and note on this level? This cannot be undone.") },
+            text = { Text("Erase every letter and note on this level? You can undo this.") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         confirmClear = false
+                        pushUndo()
                         grid.clear()
                         notes.clear()
                         selected = null
