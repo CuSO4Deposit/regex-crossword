@@ -10,6 +10,18 @@ test the algorithms; it is not published and carries its own version number
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-18
+
+### Fixed
+
+- Tapping a cell on the board now selects the cell under your finger. The hit
+  test ignored the board's centring offset, so taps landed on the wrong cell —
+  or did nothing once the board was small enough.
+- The board no longer collapses when the system font size or display size is
+  enlarged. The letter palette now uses a fixed key size, and the game layout
+  reserves a minimum board height, letting the controls scroll only when there
+  is genuinely no room left.
+
 ## [0.2.1] - 2026-09-27
 
 ### Changed
@@ -59,7 +71,8 @@ First public release of the Android app.
   (based on an idea by Palmer Mebane) in MIT Mystery Hunt 2013. See the
   [original puzzle](https://puzzles.mit.edu/2013/coinheist.com/rubik/a_regular_crossword/).
 
-[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.2
 [0.2.1]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.1
 [0.2.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.0
 [0.1.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.1.0

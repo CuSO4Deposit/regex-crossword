@@ -504,95 +504,96 @@ private fun GameContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        Column(
+        // The clue area keeps a fixed slice so selecting a cell never resizes
+        // the board; the board itself is guaranteed room ahead of the clue.
+        AdaptiveGameLayout(
+            clueHeight = if (puzzle.geometry.kind == "hex") 176.dp else 128.dp,
+            minBoardHeight = 180.dp,
+            minControlsHeight = 120.dp,
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .padding(8.dp),
-        ) {
-            // Fixed-height clue area so selecting a cell never resizes the board.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (puzzle.geometry.kind == "hex") 176.dp else 128.dp),
-            ) {
-                CluePanel(puzzle, selected, result)
-            }
-            BoardView(
-                puzzle = puzzle,
-                grid = grid,
-                notes = notes,
-                selected = selected,
-                result = result,
-                onCellTap = { selected = it },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-            )
-            StatusLine(result, message)
-            LetterPalette(
-                alphabet = alphabet,
-                onLetter = { letter ->
-                    selected?.let { cell ->
-                        pushUndo()
-                        if (notesMode) {
-                            val current = notes[cell] ?: emptySet()
-                            val updated = if (letter in current) current - letter else current + letter
-                            if (updated.isEmpty()) notes.remove(cell) else notes[cell] = updated
-                        } else {
-                            grid[cell] = letter
-                            notes.remove(cell)
+            clue = { CluePanel(puzzle, selected, result) },
+            board = { boardModifier ->
+                BoardView(
+                    puzzle = puzzle,
+                    grid = grid,
+                    notes = notes,
+                    selected = selected,
+                    result = result,
+                    onCellTap = { selected = it },
+                    modifier = boardModifier,
+                )
+            },
+            status = { StatusLine(result, message) },
+            palette = {
+                LetterPalette(
+                    alphabet = alphabet,
+                    onLetter = { letter ->
+                        selected?.let { cell ->
+                            pushUndo()
+                            if (notesMode) {
+                                val current = notes[cell] ?: emptySet()
+                                val updated = if (letter in current) current - letter else current + letter
+                                if (updated.isEmpty()) notes.remove(cell) else notes[cell] = updated
+                            } else {
+                                grid[cell] = letter
+                                notes.remove(cell)
+                            }
+                            message = null
                         }
-                        message = null
-                    }
-                },
-                onClear = {
-                    selected?.let { cell ->
-                        pushUndo()
-                        if (notesMode) {
-                            notes.remove(cell)
-                        } else if (grid.remove(cell) == null) {
-                            notes.remove(cell)
+                    },
+                    onClear = {
+                        selected?.let { cell ->
+                            pushUndo()
+                            if (notesMode) {
+                                notes.remove(cell)
+                            } else if (grid.remove(cell) == null) {
+                                notes.remove(cell)
+                            }
+                            message = null
                         }
-                        message = null
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Tip(stringResource(R.string.tooltip_hint)) {
-                    OutlinedButton(onClick = { hint() }, enabled = !busy) {
-                        Text(stringResource(R.string.action_hint))
-                    }
-                }
-                Tip(stringResource(R.string.tooltip_givens)) {
-                    OutlinedButton(onClick = { fillGivens() }) {
-                        Text(stringResource(R.string.action_givens))
-                    }
-                }
-                if (notesMode) {
-                    Tip(stringResource(R.string.tooltip_notes_on)) {
-                        Button(onClick = { notesMode = false }) {
-                            Text(stringResource(R.string.action_notes_on))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            actions = {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Tip(stringResource(R.string.tooltip_hint)) {
+                        OutlinedButton(onClick = { hint() }, enabled = !busy) {
+                            Text(stringResource(R.string.action_hint))
                         }
                     }
-                } else {
-                    Tip(stringResource(R.string.tooltip_notes)) {
-                        OutlinedButton(onClick = { notesMode = true }) {
-                            Text(stringResource(R.string.action_notes))
+                    Tip(stringResource(R.string.tooltip_givens)) {
+                        OutlinedButton(onClick = { fillGivens() }) {
+                            Text(stringResource(R.string.action_givens))
                         }
                     }
+                    if (notesMode) {
+                        Tip(stringResource(R.string.tooltip_notes_on)) {
+                            Button(onClick = { notesMode = false }) {
+                                Text(stringResource(R.string.action_notes_on))
+                            }
+                        }
+                    } else {
+                        Tip(stringResource(R.string.tooltip_notes)) {
+                            OutlinedButton(onClick = { notesMode = true }) {
+                                Text(stringResource(R.string.action_notes))
+                            }
+                        }
+                    }
+                    Tip(stringResource(R.string.tooltip_clear)) {
+                        OutlinedButton(
+                            onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
+                        ) { Text(stringResource(R.string.action_clear)) }
+                    }
                 }
-                Tip(stringResource(R.string.tooltip_clear)) {
-                    OutlinedButton(
-                        onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
-                    ) { Text(stringResource(R.string.action_clear)) }
-                }
-            }
-        }
+            },
+        )
     }
 
     if (confirmSolve) {

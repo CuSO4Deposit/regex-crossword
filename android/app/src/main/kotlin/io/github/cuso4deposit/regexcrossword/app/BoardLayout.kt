@@ -25,6 +25,8 @@ class BoardLayout private constructor(
     private val cellW: Float,
     private val cellH: Float,
     private val padding: Float,
+    private val originX: Float,
+    private val originY: Float,
 ) {
     fun polygon(cell: Cell): List<Offset> {
         val center = centers[cell] ?: return emptyList()
@@ -53,8 +55,13 @@ class BoardLayout private constructor(
     fun hitTest(point: Offset): Cell? {
         if (centers.isEmpty()) return null
         if (!isHex) {
-            val c = ((point.x - padding) / cellW).toInt()
-            val r = ((point.y - padding) / cellH).toInt()
+            // The board is centred inside its box, so the hit-test origin is the
+            // centring offset plus the padding the cells were drawn from.
+            val left = originX + padding
+            val top = originY + padding
+            if (point.x < left || point.y < top) return null
+            val c = ((point.x - left) / cellW).toInt()
+            val r = ((point.y - top) / cellH).toInt()
             return centers.keys.firstOrNull { it.r == r && it.c == c }
         }
         var best: Cell? = null
@@ -115,6 +122,8 @@ class BoardLayout private constructor(
                 cellW = cellW,
                 cellH = cellH,
                 padding = padding,
+                originX = originX,
+                originY = originY,
             )
         }
 
@@ -148,6 +157,8 @@ class BoardLayout private constructor(
                 cellW = cell,
                 cellH = cell,
                 padding = padding,
+                originX = originX,
+                originY = originY,
             )
         }
     }
