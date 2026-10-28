@@ -1,9 +1,10 @@
 # Regex Crossword — Android app (Kotlin + Jetpack Compose)
 
-The Android app for the `hexregex` regular crosswords (version 0.1.0). It draws
+The Android app for the `hexregex` regular crosswords. It draws
 the hexagon/rectangle, lets you fill cells, and judges your grid **line by line**
-exactly the way the Python tool does. Puzzles are generated on device from a
-seed. Both the reference implementation and this app are MIT-licensed (see
+exactly the way the Python tool does. Easy and Medium puzzles are generated on
+device from a seed; Hard uses a pre-generated bank and tops it up in the
+background. Both the reference implementation and this app are MIT-licensed (see
 [`../LICENSE`](../LICENSE)).
 
 Target: **Android only**, F-Droid-friendly (pure Gradle + AndroidX/Compose, no
