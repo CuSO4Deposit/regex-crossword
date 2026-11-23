@@ -130,6 +130,7 @@ fun tutorialBlocks(): List<InfoBlock> = listOf(
     InfoBlock.Item(stringResource(R.string.tut_z_term), stringResource(R.string.tut_z_body)),
     InfoBlock.Heading(stringResource(R.string.tut_controls_heading)),
     InfoBlock.Item(stringResource(R.string.tut_tap_term), stringResource(R.string.tut_tap_body)),
+    InfoBlock.Item(stringResource(R.string.tut_layout_term), stringResource(R.string.tut_layout_body)),
     InfoBlock.Item(stringResource(R.string.tut_hint_term), stringResource(R.string.tut_hint_body)),
     InfoBlock.Item(stringResource(R.string.tut_givens_term), stringResource(R.string.tut_givens_body)),
     InfoBlock.Item(stringResource(R.string.tut_notes_term), stringResource(R.string.tut_notes_body)),

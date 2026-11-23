@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -26,6 +28,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -53,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,6 +82,8 @@ private fun directionSymbol(kind: String, family: String): String = when (family
     "x" -> if (kind == "rect") "\u2193" else "\u2191"
     else -> "\u2193"
 }
+
+private val CompactActionPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
 
 @Composable
 fun GameScreen(id: PuzzleId, onBack: () -> Unit, onNextLevel: () -> Unit) {
@@ -232,6 +238,8 @@ private fun GameContent(
 ) {
     val context = LocalContext.current
     val store = remember { GameStore(context) }
+    val settings = remember { SettingsStore(context) }
+    var keyboardLayout by remember { mutableStateOf(settings.keyboardLayout) }
     val level = levelOf(id.difficulty, id.seed).coerceAtLeast(0)
     val key = "${id.version}/${id.difficulty.name}/${id.seed}"
     val solver = remember(puzzle) { Solver(puzzle) }
@@ -255,6 +263,7 @@ private fun GameContent(
     var busy by remember(key) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var menuOpen by remember { mutableStateOf(false) }
+    var layoutDialog by remember { mutableStateOf(false) }
     var confirmSolve by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var solvedNow by remember(key) { mutableStateOf(store.isSolved(id)) }
@@ -419,6 +428,11 @@ private fun GameContent(
         message = context.resources.getQuantityString(R.plurals.givens_filled, fills.size, fills.size)
     }
 
+    fun selectLayout(layout: KeyboardLayout) {
+        keyboardLayout = layout
+        settings.keyboardLayout = layout
+    }
+
     fun loadSavedSolution() {
         val stored = store.solvedGrid(id)
         if (stored == null) {
@@ -480,6 +494,13 @@ private fun GameContent(
                                 onDismissRequest = { menuOpen = false },
                             ) {
                                 DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.menu_keyboard_layout)) },
+                                    onClick = {
+                                        menuOpen = false
+                                        layoutDialog = true
+                                    },
+                                )
+                                DropdownMenuItem(
                                     text = { Text(stringResource(R.string.menu_solve)) },
                                     enabled = !busy,
                                     onClick = {
@@ -530,6 +551,7 @@ private fun GameContent(
             palette = {
                 LetterPalette(
                     alphabet = alphabet,
+                    layout = keyboardLayout,
                     onLetter = { letter ->
                         selected?.let { cell ->
                             pushUndo()
@@ -564,24 +586,37 @@ private fun GameContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Tip(stringResource(R.string.tooltip_hint)) {
-                        OutlinedButton(onClick = { hint() }, enabled = !busy) {
+                        OutlinedButton(
+                            onClick = { hint() },
+                            enabled = !busy,
+                            contentPadding = CompactActionPadding,
+                        ) {
                             Text(stringResource(R.string.action_hint))
                         }
                     }
                     Tip(stringResource(R.string.tooltip_givens)) {
-                        OutlinedButton(onClick = { fillGivens() }) {
+                        OutlinedButton(
+                            onClick = { fillGivens() },
+                            contentPadding = CompactActionPadding,
+                        ) {
                             Text(stringResource(R.string.action_givens))
                         }
                     }
                     if (notesMode) {
                         Tip(stringResource(R.string.tooltip_notes_on)) {
-                            Button(onClick = { notesMode = false }) {
+                            Button(
+                                onClick = { notesMode = false },
+                                contentPadding = CompactActionPadding,
+                            ) {
                                 Text(stringResource(R.string.action_notes_on))
                             }
                         }
                     } else {
                         Tip(stringResource(R.string.tooltip_notes)) {
-                            OutlinedButton(onClick = { notesMode = true }) {
+                            OutlinedButton(
+                                onClick = { notesMode = true },
+                                contentPadding = CompactActionPadding,
+                            ) {
                                 Text(stringResource(R.string.action_notes))
                             }
                         }
@@ -589,6 +624,7 @@ private fun GameContent(
                     Tip(stringResource(R.string.tooltip_clear)) {
                         OutlinedButton(
                             onClick = { if (grid.isNotEmpty() || notes.isNotEmpty()) confirmClear = true },
+                            contentPadding = CompactActionPadding,
                         ) { Text(stringResource(R.string.action_clear)) }
                     }
                 }
@@ -634,6 +670,47 @@ private fun GameContent(
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+
+    if (layoutDialog) {
+        AlertDialog(
+            onDismissRequest = { layoutDialog = false },
+            title = { Text(stringResource(R.string.keyboard_layout_title)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        text = stringResource(R.string.keyboard_layout_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    for (layout in KeyboardLayout.entries) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = layout == keyboardLayout,
+                                    onClick = { selectLayout(layout) },
+                                    role = Role.RadioButton,
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = layout == keyboardLayout,
+                                onClick = null,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(layout.labelRes))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { layoutDialog = false }) {
+                    Text(stringResource(R.string.action_done))
+                }
             },
         )
     }

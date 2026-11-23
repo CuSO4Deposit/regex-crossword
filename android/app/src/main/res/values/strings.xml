@@ -38,6 +38,8 @@
     <string name="tut_controls_heading">Controls</string>
     <string name="tut_tap_term">Tap a cell</string>
     <string name="tut_tap_body">then tap a letter to fill it; backspace clears it.</string>
+    <string name="tut_layout_term">Keyboard layout</string>
+    <string name="tut_layout_body">menu (top right) \u2014 choose Alphabetical, QWERTY, QWERTZ, AZERTY, Dvorak, or Colemak.</string>
     <string name="tut_hint_term">Hint</string>
     <string name="tut_hint_body">reveals one cell from a completion consistent with what you have entered.</string>
     <string name="tut_givens_term">Givens</string>
@@ -99,6 +101,18 @@
 
     <string name="menu_solve">Solve (fill a solution)</string>
     <string name="menu_load_saved">Load saved solution</string>
+    <string name="menu_keyboard_layout">Keyboard layout</string>
+
+    <!-- Keyboard layouts -->
+    <string name="keyboard_layout_title">Keyboard layout</string>
+    <string name="keyboard_layout_body">Choose how the letters are arranged on the on-screen keyboard.</string>
+    <string name="keyboard_layout_alphabetical">Alphabetical (A\u2013Z)</string>
+    <string name="keyboard_layout_qwerty">QWERTY</string>
+    <string name="keyboard_layout_qwertz">QWERTZ</string>
+    <string name="keyboard_layout_azerty">AZERTY</string>
+    <string name="keyboard_layout_dvorak">Dvorak</string>
+    <string name="keyboard_layout_colemak">Colemak</string>
+    <string name="action_done">Done</string>
 
     <string name="solve_dialog_title">Solve?</string>
     <string name="solve_dialog_body">Fill one complete valid solution? This overwrites your current entries.</string>

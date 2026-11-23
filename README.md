@@ -29,8 +29,9 @@ fixtures.
   and can have more than one valid grid.
 - Hard puzzles have exactly one solution. They ship as a pre-generated bank so
   they are ready immediately, and the app fills in more in the background.
-- On-screen A–Z keyboard, pencil notes, per-cell hints, givens (letters a clue
-  writes out literally), undo/redo, and a per-level timer.
+- On-screen A–Z keyboard with Alphabetical, QWERTY, QWERTZ, AZERTY, Dvorak,
+  and Colemak layouts, plus pencil notes, per-cell hints, givens (letters a
+  clue writes out literally), undo/redo, and a per-level timer.
 - The grid is judged line by line with whole-string regex matching.
 - Progress is saved locally for each level.
 - No accounts, ads, network access, or permissions.

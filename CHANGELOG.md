@@ -10,6 +10,12 @@ test the algorithms; it is not published and carries its own version number
 
 ## [Unreleased]
 
+### Added
+
+- Selectable on-screen keyboard layouts: Alphabetical (the default), QWERTY,
+  QWERTZ, AZERTY, Dvorak, and Colemak. The choice is remembered across
+  sessions and can be changed from the in-game menu.
+
 ## [0.2.2] - 2026-10-18
 
 ### Fixed

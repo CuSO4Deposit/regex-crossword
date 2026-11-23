@@ -35,9 +35,11 @@ android/
     src/main/.../GameScreen.kt  board, clue panel, hint/solve, check
     src/main/.../BoardView.kt   Canvas rendering (family colours, start rings)
     src/main/.../BoardLayout.kt honeycomb / grid layout + hit testing
-    src/main/.../LetterPalette.kt on-screen letter keyboard
+    src/main/.../LetterPalette.kt on-screen letter keyboard + layout rendering
+    src/main/.../KeyboardLayout.kt selectable letter arrangements
     src/main/.../FamilyColors.kt X/Y/Z colours
     src/main/.../GameStore.kt   SharedPreferences progress + solved levels
+    src/main/.../SettingsStore.kt SharedPreferences user preferences
 ```
 
 The engine is deliberately a plain JVM module so it can be unit-tested without

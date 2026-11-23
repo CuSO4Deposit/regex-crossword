@@ -78,8 +78,9 @@ fun AdaptiveGameLayout(
             val controlsFloor = minControlsHeight.roundToPx()
             if (available >= boardMin + controlsFloor) {
                 boardH = boardMin
-                clueH = minOf(clueNatural, (available - boardH - controlsFloor).coerceAtLeast(0))
-                controlsH = available - boardH - clueH
+                controlsH = minOf(controlsNaturalH, available - boardH)
+                    .coerceAtLeast(controlsFloor)
+                clueH = minOf(clueNatural, available - boardH - controlsH)
             } else {
                 // Not even the floor and a minimum keyboard fit: split the
                 // space, board first, so neither reaches zero.
