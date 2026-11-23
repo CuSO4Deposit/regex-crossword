@@ -15,6 +15,54 @@
     <string name="home_how_to_play">How to play</string>
     <string name="home_license">License</string>
     <string name="home_about">About</string>
+    <string name="home_backup_restore">Backup &amp; restore</string>
+
+    <!-- Backup and restore -->
+    <string name="backup_title">Backup &amp; restore</string>
+    <string name="backup_intro">Save all game progress and settings in one JSON file, or restore a backup from this device.</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_working">Checking or saving the backup\u2026</string>
+    <string name="backup_replace_warning">Restoring replaces every progress record, the last position, and all settings on this device.</string>
+    <string name="backup_export_success">Backup exported.</string>
+    <string name="backup_failed_generic">Unknown error</string>
+    <string name="backup_failed">Backup failed: %1$s</string>
+    <string name="backup_confirm_title">Restore this backup?</string>
+    <string name="backup_contents_title">Backup contents</string>
+    <string name="backup_local_title">On this device</string>
+    <string name="backup_difficulty_counts">%1$s \u00B7 Solved: %2$d \u00B7 In progress: %3$d</string>
+    <string name="backup_confirm_replace">This replaces all progress, the last position, and settings on this device. Current local progress will be removed.</string>
+    <string name="backup_confirm_action">Replace and restore</string>
+    <string name="backup_restore_commit_failed">The device storage did not confirm the replacement.</string>
+    <string name="backup_matches_local">The backup matches all saved puzzle progress on this device.</string>
+    <string name="backup_compare_failed">Current local progress could not be compared. It will still be replaced if you continue.</string>
+    <plurals name="backup_conflict_warning">
+        <item quantity="one">Conflict: %1$d saved puzzle differs from this device. Restoring will replace the local progress.</item>
+        <item quantity="other">Conflict: %1$d saved puzzles differ from this device. Restoring will replace their local progress.</item>
+    </plurals>
+    <string name="backup_conflict_item">\u2022 %1$s</string>
+    <string name="backup_conflict_identity">%1$s \u00B7 Level %2$d \u00B7 generator v%3$d \u00B7 seed %4$d</string>
+    <string name="backup_conflict_identity_no_level">%1$s \u00B7 generator v%2$d \u00B7 seed %3$d</string>
+    <plurals name="backup_added_count">
+        <item quantity="one">Backup adds %1$d puzzle that is not on this device.</item>
+        <item quantity="other">Backup adds %1$d puzzles that are not on this device.</item>
+    </plurals>
+    <plurals name="backup_local_only_count">
+        <item quantity="one">Restoring removes %1$d puzzle that exists only on this device.</item>
+        <item quantity="other">Restoring removes %1$d puzzles that exist only on this device.</item>
+    </plurals>
+    <plurals name="backup_progress_count">
+        <item quantity="one">%1$d progress record</item>
+        <item quantity="other">%1$d progress records</item>
+    </plurals>
+    <plurals name="backup_completed_count">
+        <item quantity="one">%1$d completed puzzle</item>
+        <item quantity="other">%1$d completed puzzles</item>
+    </plurals>
+    <plurals name="backup_old_versions">
+        <item quantity="one">%1$d record uses another puzzle generator version. It will be kept, but cannot be played in this app version.</item>
+        <item quantity="other">%1$d records use another puzzle generator version. They will be kept, but cannot be played in this app version.</item>
+    </plurals>
 
     <!-- Screen titles -->
     <string name="title_how_to_play">How to play</string>

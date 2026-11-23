@@ -15,6 +15,12 @@ test the algorithms; it is not published and carries its own version number
 - Selectable on-screen keyboard layouts: Alphabetical (the default), QWERTY,
   QWERTZ, AZERTY, Dvorak, and Colemak. The choice is remembered across
   sessions and can be changed from the in-game menu.
+- Versioned JSON backup and restore through Android's system file picker. The
+  artifact contains all saved progress and settings, is protected by a
+  canonical SHA-256 digest, and replaces local save data only after validation
+  and confirmation. The confirmation preview compares Easy, Medium, and Hard
+  solved/in-progress counts with the current device data and warns about
+  conflicting, added, and locally removed puzzle records.
 
 ## [0.2.2] - 2026-10-18
 

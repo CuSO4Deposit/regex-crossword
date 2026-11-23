@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +38,7 @@ fun HomeScreen(
     onTutorial: () -> Unit,
     onLicense: () -> Unit,
     onAbout: () -> Unit,
+    onBackup: () -> Unit,
 ) {
     Scaffold { innerPadding ->
         Column(
@@ -74,6 +76,12 @@ fun HomeScreen(
             for (difficulty in Difficulty.entries) {
                 DifficultyCard(difficulty = difficulty, onClick = { onPlay(difficulty) })
                 Spacer(Modifier.height(12.dp))
+            }
+            OutlinedButton(
+                onClick = onBackup,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.home_backup_restore))
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

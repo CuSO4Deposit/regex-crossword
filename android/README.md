@@ -40,7 +40,13 @@ android/
     src/main/.../FamilyColors.kt X/Y/Z colours
     src/main/.../GameStore.kt   SharedPreferences progress + solved levels
     src/main/.../SettingsStore.kt SharedPreferences user preferences
+    src/main/.../BackupCodec.kt strict JSON, validation, canonical SHA-256
+    src/main/.../BackupStorage.kt snapshots and whole-store replacement
+    src/main/.../BackupScreen.kt system file picker import/export flow
 ```
+
+The versioned JSON backup contract is documented in
+[`BACKUP_FORMAT.md`](BACKUP_FORMAT.md).
 
 The engine is deliberately a plain JVM module so it can be unit-tested without
 the Android SDK (`./gradlew -p engine test`). The `:app` module consumes it.
@@ -175,8 +181,13 @@ levels), the board with family colours / reading arrows / start rings, a clue
 panel showing each line's full (wrapping) regex and the filled word, notes,
 Hint, Givens, Undo/Redo, a per-level timer, a Snackbar on solve with "Next
 level", progress persistence (grid, notes, selection, solved grid, elapsed
-time), and the How-to-play / License / About pages. Lines that are full but
-wrong are outlined in red automatically.
+time), versioned and SHA-256-protected JSON export/import, and the How-to-play /
+License / About pages. Lines that are full but wrong are outlined in red
+automatically.
+
+Restore confirmation shows solved and in-progress counts per difficulty for
+both the backup and the current device, then calls out conflicting puzzle
+progress and records that will be added or removed.
 
 Levels follow `level_id -> seed = seedBase + level_id -> Generator`. EASY and
 MEDIUM are constructive (instant); HARD loads unique puzzles from the bundled
@@ -185,7 +196,7 @@ bank and generates more in the background. Hint/Solve run off the main thread.
 Roadmap:
 
 1. Share a level by id; daily challenge.
-2. Optional: candidate auto-pruning from solver domains, progress export.
+2. Optional: candidate auto-pruning from solver domains.
 
 Bump `GENERATOR_VERSION` (in `Levels.kt`) whenever the generator, the presets or
 the seed bases change.

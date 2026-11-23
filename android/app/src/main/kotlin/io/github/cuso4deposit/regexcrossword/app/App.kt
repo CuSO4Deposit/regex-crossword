@@ -14,6 +14,7 @@ private sealed interface Screen {
     data object Tutorial : Screen
     data object License : Screen
     data object About : Screen
+    data object Backup : Screen
     data class Levels(val difficulty: Difficulty) : Screen
     data class Game(val id: PuzzleId) : Screen
 }
@@ -37,6 +38,7 @@ fun HexregexApp() {
             onTutorial = { screen = Screen.Tutorial },
             onLicense = { screen = Screen.License },
             onAbout = { screen = Screen.About },
+            onBackup = { screen = Screen.Backup },
         )
 
         Screen.Tutorial ->
@@ -45,6 +47,10 @@ fun HexregexApp() {
             InfoScreen(stringResource(R.string.title_license), licenseBlocks(), onBack = { goHome() })
         Screen.About ->
             InfoScreen(stringResource(R.string.title_about), aboutBlocks(), onBack = { goHome() })
+        Screen.Backup -> {
+            BackHandler { goHome() }
+            BackupScreen(onBack = { goHome() }, onRestored = { goHome() })
+        }
 
         is Screen.Levels -> {
             BackHandler { goHome() }
