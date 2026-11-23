@@ -7,7 +7,7 @@ name = "hexregex"
 version = "0.5.0"
 description = "Solver and generator for hexagonal regular crosswords"
 readme = "hexregex/README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = []
 

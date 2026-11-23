@@ -8,7 +8,7 @@ change before starting anything large.
 ## Reference implementation (`hexregex`)
 
 `hexregex/` is the Python prototype used to design and test the algorithms; the
-Android app is the product. It requires Python ≥ 3.8 and no third-party packages
+Android app is the product. It requires Python ≥ 3.11 and no third-party packages
 and is not published.
 
 ```bash
