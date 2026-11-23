@@ -1,0 +1,3 @@
+Choose an on-screen keyboard layout: Alphabetical, QWERTY, QWERTZ, AZERTY, Dvorak, or Colemak. Change it from the in-game menu.
+
+Back up progress and settings to a JSON file and restore them through the system file picker. Review progress counts and conflicting, added, or removed puzzle records before replacing local saves.
