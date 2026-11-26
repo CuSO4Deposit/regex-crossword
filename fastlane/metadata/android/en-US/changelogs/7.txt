@@ -1,0 +1,3 @@
+Rebuilt with JDK 21 to match F-Droid's build environment so this update can be
+reproduced and published with the developer's signature. There are no
+functional changes from version 0.3.0.

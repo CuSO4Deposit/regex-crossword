@@ -10,6 +10,14 @@ test the algorithms; it is not published and carries its own version number
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-26
+
+### Fixed
+
+- Rebuilt the 0.3.0 release with JDK 21 to match F-Droid's default build
+  environment and restore reproducible builds. The app continues to target
+  Java 17 and has no functional changes.
+
 ## [0.3.0] - 2026-11-23
 
 ### Added
@@ -85,7 +93,8 @@ First public release of the Android app.
   (based on an idea by Palmer Mebane) in MIT Mystery Hunt 2013. See the
   [original puzzle](https://puzzles.mit.edu/2013/coinheist.com/rubik/a_regular_crossword/).
 
-[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/CuSO4Deposit/regex-crossword/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.3.1
 [0.3.0]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.3.0
 [0.2.2]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.2
 [0.2.1]: https://github.com/CuSO4Deposit/regex-crossword/releases/tag/v0.2.1
